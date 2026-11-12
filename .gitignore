@@ -30,3 +30,6 @@ src/prototype/out/
 
 # Session context snapshot
 context.md
+
+# Release signing secrets (the keystore itself is covered by *.jks / *.keystore above)
+keystore.properties
