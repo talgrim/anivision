@@ -20,6 +20,13 @@ class VisionProfile(val id: String, rowMajor: FloatArray) {
     /** Defensive copy, 3x3 row-major. */
     fun linearMatrix(): FloatArray = matrix.copyOf()
 
+    /** Column-major order, as `glUniformMatrix3fv(..., transpose = false, ...)` and GLSL `mat3(...)` expect. */
+    fun linearMatrixColumnMajor(): FloatArray = floatArrayOf(
+        matrix[0], matrix[3], matrix[6],
+        matrix[1], matrix[4], matrix[7],
+        matrix[2], matrix[5], matrix[8],
+    )
+
     /** `android.graphics.ColorMatrix` layout: 4x5 row-major, alpha row identity, zero offsets. */
     fun toColorMatrixValues(): FloatArray = floatArrayOf(
         matrix[0], matrix[1], matrix[2], 0f, 0f,
