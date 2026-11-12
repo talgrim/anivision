@@ -1,7 +1,18 @@
+import java.io.StringReader
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
 }
+
+// Release signing secrets live in src/android/keystore.properties (git-ignored, see RELEASING.md).
+// Without that file the release build still works but is left unsigned.
+val keystoreProperties: Properties? = providers
+    .fileContents(rootProject.layout.projectDirectory.file("keystore.properties"))
+    .asText
+    .map { text -> Properties().apply { load(StringReader(text)) } }
+    .orNull
 
 android {
     namespace = "com.anivision.app"
@@ -19,11 +30,24 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        keystoreProperties?.let { props ->
+            create("release") {
+                storeFile = rootProject.file(props.getProperty("storeFile"))
+                storePassword = props.getProperty("storePassword")
+                keyAlias = props.getProperty("keyAlias")
+                keyPassword = props.getProperty("keyPassword")
+            }
+        }
+    }
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("release")
+            // R8 is off: with it on, the release APK crashed at start-up (IllegalAccessError, R8 split
+            // the Kotlin stdlib's CollectionsKt__* class hierarchy across packages). Turn it back on
+            // only together with keep rules, and test a signed release build on a device.
             optimization {
-                enable = true
-                packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
+                enable = false
             }
         }
     }
