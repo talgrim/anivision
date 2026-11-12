@@ -43,12 +43,14 @@ private val HANDLE_SIZE = 36.dp
  *
  * @param onDrag receives the drag as a change in [fraction] (positive = right); the caller applies
  * and clamps it, so quick successive drags never act on a stale position.
+ * @param onDragStopped called when the finger lifts, for work that is too heavy to do on every step.
  */
 @Composable
 fun SplitDivider(
     fraction: () -> Float,
     onDrag: (Float) -> Unit,
     modifier: Modifier = Modifier,
+    onDragStopped: () -> Unit = {},
 ) {
     BoxWithConstraints(modifier) {
         val widthPx = constraints.maxWidth.toFloat()
@@ -62,7 +64,7 @@ fun SplitDivider(
                 .width(TOUCH_WIDTH)
                 .fillMaxHeight()
                 .semantics { contentDescription = description }
-                .draggable(state = dragState, orientation = Orientation.Horizontal),
+                .draggable(state = dragState, orientation = Orientation.Horizontal, onDragStopped = { onDragStopped() }),
             contentAlignment = Alignment.Center,
         ) {
             Box(

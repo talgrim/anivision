@@ -52,6 +52,7 @@ fun AboutScreen(
                 AboutSection(R.string.about_colour_title, R.string.about_colour)
                 AboutSection(R.string.about_blur_title, R.string.about_blur)
                 AboutSection(R.string.about_night_title, R.string.about_night)
+                AboutSection(R.string.about_cat_title, R.string.about_cat)
                 AboutSection(R.string.about_privacy_title, R.string.about_privacy)
             }
             Button(onClick = onClose, modifier = Modifier.fillMaxWidth()) {

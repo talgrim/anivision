@@ -1,6 +1,7 @@
 package com.anivision.app.camera
 
 import android.util.Log
+import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.Preview
@@ -52,6 +53,10 @@ private const val VIEW_PORT_TIMEOUT_MS = 2_000L
  * If [imageCapture] is given it is bound with the preview and shares its view port, so a photo
  * covers exactly the area the preview shows. It is not filtered here; see `PhotoCapturer`.
  *
+ * With [wideAngle] the camera is zoomed out as far as it goes (a zoom ratio below 1 selects the
+ * ultra-wide lens on phones that expose one; on others nothing changes). It applies to the
+ * preview and to photos, which share the zoom.
+ *
  * The caller must hold the CAMERA permission (see [CameraPermissionGate]).
  */
 @Composable
@@ -60,6 +65,7 @@ fun CameraPreview(
     settings: () -> VisionSettings = { VisionSettings() },
     lensFacing: Int = CameraSelector.LENS_FACING_BACK,
     imageCapture: ImageCapture? = null,
+    wideAngle: Boolean = false,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -68,6 +74,15 @@ fun CameraPreview(
     var failed by remember { mutableStateOf(false) }
     // Bumped by the retry button: it restarts the effect below, which rebuilds the whole pipeline.
     var attempt by remember { mutableIntStateOf(0) }
+    // The bound camera, for zoom control; null while nothing is bound.
+    var camera by remember { mutableStateOf<Camera?>(null) }
+
+    LaunchedEffect(camera, wideAngle) {
+        val bound = camera ?: return@LaunchedEffect
+        val widest = bound.cameraInfo.zoomState.value?.minZoomRatio ?: 1f
+        // Fire and forget: the call only fails if the camera has closed, and then the zoom is moot.
+        bound.cameraControl.setZoomRatio(if (wideAngle) minOf(widest, 1f) else 1f)
+    }
 
     LaunchedEffect(previewView, lifecycleOwner, lensFacing, attempt) {
         failed = false
@@ -93,7 +108,7 @@ fun CameraPreview(
                     previewView.awaitViewPort()?.let { setViewPort(it) }
                 }
                 .build()
-            provider.bindToLifecycle(
+            camera = provider.bindToLifecycle(
                 lifecycleOwner,
                 CameraSelector.Builder().requireLensFacing(lensFacing).build(),
                 useCases,
@@ -105,6 +120,7 @@ fun CameraPreview(
             Log.e(TAG, "Camera could not be started", e)
             failed = true
         } finally {
+            camera = null
             provider.unbind(*listOfNotNull(preview, imageCapture).toTypedArray())
             processor.release()
         }

@@ -2,7 +2,7 @@
     <string name="app_name">AniVision</string>
 
     <string name="camera_permission_title">Camera access</string>
-    <string name="camera_permission_message">AniVision uses the camera to show the live view as a dog\'s colour vision might capture it. Photos you take are saved to your gallery; nothing is sent anywhere.</string>
+    <string name="camera_permission_message">AniVision uses the camera to show the live view as a dog\'s or cat\'s colour vision might capture it. Photos you take are saved to your gallery; nothing is sent anywhere.</string>
     <string name="camera_permission_allow">Allow camera</string>
 
     <string name="camera_denied_title">Camera access is needed</string>
@@ -13,10 +13,16 @@
     <string name="camera_blocked_message">Android will not ask again. Open the app settings, choose Permissions, then allow Camera.</string>
     <string name="camera_blocked_open_settings">Open app settings</string>
 
-    <string name="mode_normal">Normal</string>
+    <string name="perspective_human">Human</string>
+    <string name="perspective_dog">Dog</string>
+    <string name="perspective_cat">Cat</string>
     <string name="mode_split">Split</string>
-    <string name="mode_dog">Dog</string>
-    <string name="split_divider_description">Divider between the normal view on the left and the dog view on the right. Drag to move it.</string>
+    <string name="split_divider_description">Divider between the left and right views. Drag to move it.</string>
+
+    <string name="settings">Settings</string>
+    <string name="views_title">Views</string>
+    <string name="views_left">Left button</string>
+    <string name="views_right">Right button</string>
 
     <string name="blur_label">Acuity blur</string>
     <string name="blur_strength_label">Strength</string>
@@ -28,7 +34,7 @@
     <string name="photo_failed">The photo could not be saved.</string>
 
     <string name="gallery">Gallery</string>
-    <string name="imported_photo_description">Gallery photo as a dog might see it</string>
+    <string name="imported_photo_description">Gallery photo in the chosen view</string>
     <string name="import_failed">That image could not be opened.</string>
     <string name="close">Close</string>
     <string name="save">Save</string>
@@ -42,14 +48,16 @@
     <string name="about">About</string>
     <string name="about_title">About AniVision</string>
     <string name="about_version">Version %1$s</string>
-    <string name="about_disclaimer_title">An approximation, not a dog\'s experience</string>
-    <string name="about_disclaimer">AniVision shows an approximation of what a dog\'s cone cells might capture. It cannot show what a dog actually sees or experiences: that depends on the brain, not only on the eye.</string>
+    <string name="about_disclaimer_title">An approximation, not an animal\'s experience</string>
+    <string name="about_disclaimer">AniVision shows an approximation of what a dog\'s or cat\'s cone cells might capture. It cannot show what a dog actually sees or experiences, and the same goes for a cat: that depends on the brain, not only on the eye.</string>
     <string name="about_colour_title">Colour</string>
-    <string name="about_colour">People have three kinds of colour-sensitive cone cells. Dogs have two, so they are generally thought to tell blues and yellows apart well but to confuse reds and greens, which look like muted yellows and browns. The Dog view applies that kind of colour mapping to the camera image.</string>
+    <string name="about_colour">People have three kinds of colour-sensitive cone cells. Dogs and cats have two, so they are generally thought to tell blues and yellows apart well but to confuse reds and greens, which look like muted yellows and browns. The Dog and Cat views apply that kind of colour mapping to the camera image.</string>
     <string name="about_blur_title">Acuity blur</string>
-    <string name="about_blur">Dogs see less fine detail than people. The optional blur softens the image to hint at that. It is exaggerated on purpose so that the effect is visible on a phone screen.</string>
+    <string name="about_blur">Dogs and cats see less fine detail than people. The optional blur softens the image to hint at that. It is exaggerated on purpose so that the effect is visible on a phone screen.</string>
     <string name="about_night_title">Night boost</string>
-    <string name="about_night">Night boost brightens the shadows. It is an artistic effect to help show dim scenes, not a model of how dogs see in the dark.</string>
+    <string name="about_night">Night boost brightens the shadows. It is an artistic effect to help show dim scenes, not a model of how dogs or cats see in the dark.</string>
+    <string name="about_cat_title">Cat and dog views</string>
+    <string name="about_cat">The cat\'s colour and blur are very similar to the dog\'s, so the two views look almost the same on their own. To hint at what is different about cats, the Cat view adds three artistic extras. They are not measurements. It brightens shadows a little, as an echo of cats\' better dim-light vision. When the blur is on, the blur grows towards the edges of the picture. And on phones with an ultra-wide lens it zooms out to the widest view, as a hint of a cat\'s wide field of view.</string>
     <string name="about_privacy_title">Privacy</string>
     <string name="about_privacy">AniVision uses the camera only to show the live view and take photos. Photos are saved to Pictures/AniVision on your device. Nothing is collected or sent anywhere.</string>
 </resources>
