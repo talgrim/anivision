@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.AniVision" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Follows the system light/dark setting so the window behind Compose never flashes the wrong colour. -->
+    <style name="Theme.AniVision" parent="android:Theme.DeviceDefault.DayNight">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
 </resources>

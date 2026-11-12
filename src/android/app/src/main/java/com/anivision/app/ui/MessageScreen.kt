@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -23,18 +24,20 @@ fun MessageScreen(
     actionLabel: String? = null,
     onAction: () -> Unit = {},
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .systemBarsPadding()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(text = title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
-        Text(text = message, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
-        if (actionLabel != null) {
-            Button(onClick = onAction) { Text(actionLabel) }
+    Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .systemBarsPadding()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(text = title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+            Text(text = message, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
+            if (actionLabel != null) {
+                Button(onClick = onAction) { Text(actionLabel) }
+            }
         }
     }
 }

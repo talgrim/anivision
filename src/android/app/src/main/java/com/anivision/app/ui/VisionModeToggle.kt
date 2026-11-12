@@ -22,6 +22,7 @@ fun VisionModeToggle(
         modifier = modifier,
         shape = RoundedCornerShape(50),
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
         SingleChoiceSegmentedButtonRow {
             ViewMode.entries.forEachIndexed { index, entry ->
