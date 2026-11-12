@@ -1,17 +1,19 @@
 package com.anivision.app.photo
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.media.ExifInterface
 import android.provider.MediaStore
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.anivision.app.vision.AnimalVision
+import com.anivision.app.vision.VisionSettings
 import java.io.File
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
-import org.junit.Assume.assumeTrue
-import org.junit.Before
+import org.junit.Assert.assertNotEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -21,12 +23,6 @@ class PhotoPipelineTest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
     private val files = mutableListOf<File>()
     private val uris = mutableListOf<android.net.Uri>()
-
-    @Before
-    fun requireScopedStorage() {
-        // Before Android 10 saving needs WRITE_EXTERNAL_STORAGE, which a test cannot grant itself.
-        assumeTrue(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q)
-    }
 
     @After
     fun cleanUp() {
@@ -65,6 +61,31 @@ class PhotoPipelineTest {
             cursor.moveToFirst()
             assertEquals(true, cursor.getString(0).startsWith("AniVision_"))
             assertEquals(true, cursor.getString(1).startsWith("Pictures/AniVision"))
+        }
+    }
+
+    @Test
+    fun saveBitmapStoresADecodableJpegOfTheSameSize() {
+        val bitmap = Bitmap.createBitmap(64, 48, Bitmap.Config.ARGB_8888).also { it.eraseColor(0xFF884422.toInt()) }
+        val uri = runBlocking { PhotoStore(context.contentResolver).saveBitmap(bitmap) }
+        uris += uri
+
+        val saved = context.contentResolver.openInputStream(uri)!!.use { BitmapFactory.decodeStream(it) }
+        assertEquals(64 to 48, saved.width to saved.height)
+    }
+
+    @Test
+    fun filtererRendersAGalleryStreamUprightInDogColours() {
+        // 200x100 stored with a 90 degree rotation is a 100x200 portrait photo once upright.
+        val file = jpeg(width = 200, height = 100, exifOrientation = ExifInterface.ORIENTATION_ROTATE_90)
+        val settings = VisionSettings(profile = AnimalVision.DOG)
+        val result = runBlocking { PhotoFilterer().render({ file.inputStream() }, settings) }
+        try {
+            assertEquals(100 to 200, result.width to result.height)
+            // Dog colours change the pixel from the source colour (0x336699).
+            assertNotEquals(0xFF336699.toInt(), result.getPixel(50, 100))
+        } finally {
+            result.recycle()
         }
     }
 
