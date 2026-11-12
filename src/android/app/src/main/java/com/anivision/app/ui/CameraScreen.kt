@@ -1,12 +1,7 @@
 package com.anivision.app.ui
 
-import android.Manifest
-import android.content.pm.PackageManager
-import android.os.Build
 import android.view.Surface
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.ImageCapture
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import com.anivision.app.R
 import com.anivision.app.camera.CameraPreview
 import com.anivision.app.photo.PhotoCapturer
@@ -73,17 +67,6 @@ fun CameraScreen() {
         }
     }
 
-    val storagePermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) takePhoto() else Toast.makeText(context, R.string.photo_needs_storage, Toast.LENGTH_LONG).show()
-    }
-
-    fun onShutter() {
-        val needsStoragePermission = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
-            PackageManager.PERMISSION_GRANTED
-        if (needsStoragePermission) storagePermission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE) else takePhoto()
-    }
-
     Box(modifier = Modifier.fillMaxSize()) {
         CameraPreview(
             modifier = Modifier.fillMaxSize(),
@@ -100,7 +83,7 @@ fun CameraScreen() {
         ) {
             if (dogView) BlurSwitch(checked = blur, onCheckedChange = { blur = it })
             VisionModeToggle(dogView = dogView, onDogViewChange = { dogView = it })
-            ShutterButton(onClick = ::onShutter, busy = saving)
+            ShutterButton(onClick = ::takePhoto, busy = saving)
         }
     }
 }

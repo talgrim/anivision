@@ -43,7 +43,7 @@ rules as needed and re-test a signed release build on a device.
 ## Install on another phone
 
 Send the APK. The recipient opens it and allows "Install unknown apps" for the app they opened
-it from. Needs Android 8.0 (API 26) or newer and OpenGL ES 3.0.
+it from. Needs Android 10 (API 29) or newer and OpenGL ES 3.0.
 
 For a larger group, upload an app bundle (`./gradlew bundleRelease`) to a Play Console internal
 or closed testing track instead.
