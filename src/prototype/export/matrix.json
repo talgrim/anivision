@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "caveat": "Approximation of what a dog's cones capture, not of what a dog subjectively experiences. Assumes sRGB input and a modelled display (Gaussian primaries); see src/prototype/README.md.",
+  "generator": {
+    "script": "src/prototype/scripts/export_constants.py",
+    "git_commit": "3a42986f9e07a3a927013d606eb9f98c30dad7dd",
+    "git_dirty": true
+  },
+  "convention": {
+    "space": "linear sRGB (D65), matrix acts on column vectors: out = M @ rgb",
+    "json_layout": "row-major, matrix[row][col]",
+    "glsl_mat3_layout": "column-major constructor arguments",
+    "gl_uniform_matrix3fv": "column-major data with transpose = false"
+  },
+  "pipeline": [
+    "decode sRGB -> linear",
+    "acuity blur (optional, linear light)",
+    "shadow lift (optional)",
+    "matrix",
+    "gamut fit: clamp each channel to [0, 1]",
+    "encode linear -> sRGB"
+  ],
+  "gamut": {
+    "policy": "clip",
+    "tolerance": 1e-06
+  },
+  "profiles": {
+    "dog": {
+      "default_variant": "v2",
+      "variants": {
+        "v2": {
+          "description": "Dog-specific projection derived from Govardovskii cone sensitivities (S 429 / L 555 nm), 475 nm anchor. Shipped default (NOTES.md, Phase 3 decision).",
+          "matrix": [
+            [0.32542410778979036, 0.9075727682218729, -0.23299687601166333],
+            [0.2416027673604796, 0.6749482231495361, 0.08344900948998432],
+            [-0.0010779778677420752, 0.0014503088070686083, 0.9996276690606738]
+          ],
+          "derivation": {
+            "s_peak_nm": 429.0,
+            "l_peak_nm": 555.0,
+            "anchor_nm": 475.0,
+            "display_primary_centers_nm": [610.0, 550.0, 465.0],
+            "display_primary_sigma_nm": 20.0,
+            "neutral_point_nm": 486.7032868227484
+          }
+        },
+        "v0": {
+          "description": "Vienot, Brettel & Mollon (1999) deuteranopia matrix for linear sRGB. Fallback.",
+          "matrix": [
+            [0.29275, 0.70725, 0.0],
+            [0.29275, 0.70725, 0.0],
+            [-0.02234, 0.02234, 1.0]
+          ]
+        }
+      }
+    }
+  },
+  "acuity": {
+    "enabled_by_default": false,
+    "blur_space": "linear light",
+    "edges": "mirror preferred; clamp-to-edge is acceptable where mirroring is unavailable (external camera textures may only support clamp)",
+    "kernel": "Gaussian, isotropic; truncate at 3 sigma or more",
+    "formula": {
+      "cutoff_cpd": "human_cutoff_cpd / acuity_ratio",
+      "sigma_px": "k * (acuity_ratio / 60 / 2) * (long_edge_px / hfov_deg) * exaggeration",
+      "k": "2 * sqrt(2 * ln(1 / mtf_at_cutoff)) / pi"
+    },
+    "human_cutoff_cpd": 30.0,
+    "mtf_at_cutoff": 0.1,
+    "k": 1.3661644031648874,
+    "acuity_ratio": 3.75,
+    "hfov_deg": 70.0,
+    "hfov_applies_to": "the long edge of the frame",
+    "default_exaggeration": 1.0,
+    "max_exaggeration": 8.0,
+    "sigma_px_examples": [
+      {
+        "long_edge_px": 640,
+        "exaggeration": 1.0,
+        "sigma_px": 0.39033268661853926
+      },
+      {
+        "long_edge_px": 640,
+        "exaggeration": 4.0,
+        "sigma_px": 1.561330746474157
+      },
+      {
+        "long_edge_px": 640,
+        "exaggeration": 8.0,
+        "sigma_px": 3.122661492948314
+      },
+      {
+        "long_edge_px": 1080,
+        "exaggeration": 1.0,
+        "sigma_px": 0.658686408668785
+      },
+      {
+        "long_edge_px": 1080,
+        "exaggeration": 4.0,
+        "sigma_px": 2.63474563467514
+      },
+      {
+        "long_edge_px": 1080,
+        "exaggeration": 8.0,
+        "sigma_px": 5.26949126935028
+      },
+      {
+        "long_edge_px": 1440,
+        "exaggeration": 1.0,
+        "sigma_px": 0.8782485448917134
+      },
+      {
+        "long_edge_px": 1440,
+        "exaggeration": 4.0,
+        "sigma_px": 3.512994179566854
+      },
+      {
+        "long_edge_px": 1440,
+        "exaggeration": 8.0,
+        "sigma_px": 7.025988359133708
+      },
+      {
+        "long_edge_px": 1920,
+        "exaggeration": 1.0,
+        "sigma_px": 1.1709980598556178
+      },
+      {
+        "long_edge_px": 1920,
+        "exaggeration": 4.0,
+        "sigma_px": 4.683992239422471
+      },
+      {
+        "long_edge_px": 1920,
+        "exaggeration": 8.0,
+        "sigma_px": 9.367984478844942
+      }
+    ],
+    "linear_light_check": {
+      "note": "a 50/50 black-white checker blurred to a flat value encodes to this sRGB value",
+      "srgb_8bit": 188
+    }
+  },
+  "shadow_lift": {
+    "enabled_by_default": false,
+    "artistic": true,
+    "formula": "rgb * min(Y^(gamma - 1), max(1, 1 / max(r, g, b))) where Y = clamp(dot(luma, rgb), 1e-6, 1); scale is 1 when Y >= 1; the cap keeps every channel at or below 1",
+    "luma": [0.2126729, 0.7151522, 0.072175],
+    "off_gamma": 1.0,
+    "suggested_gamma": 0.85,
+    "strongest_gamma": 0.7
+  }
+}

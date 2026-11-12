@@ -1,5 +1,23 @@
 # IDE
 .idea/
+*.iml
+
+# Android / Gradle
+.gradle/
+build/
+local.properties
+captures/
+.cxx/
+.externalNativeBuild/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
 
 # Python
 .venv/
@@ -9,3 +27,12 @@ __pycache__/
 
 # Prototype generated output
 src/prototype/out/
+
+# Local sample images and prototype output
+data/
+
+# Session context snapshot
+context.md
+
+# Release signing secrets (the keystore itself is covered by *.jks / *.keystore above)
+keystore.properties

@@ -1,4 +1,4 @@
-# Anivision: Android Scaffolding Plan
+# AniVision: Android Scaffolding Plan
 
 ## 1. Context
 
@@ -53,11 +53,11 @@ The final matrix should be derived from canine cone sensitivities (peaks 429 / 5
 | UI | Jetpack Compose | Current default. `PreviewView` is embedded via `AndroidView`. |
 | Camera | CameraX (`camera-core`, `camera-camera2`, `camera-lifecycle`, `camera-view`; later `camera-video`, `camera-effects`) | Lifecycle-aware, handles device quirks. |
 | Processing | GPU (GLSL fragment shader). Not CPU pixel loops. | Real-time at 30 fps without draining the battery. |
-| minSdk | 26 | Covers nearly all active devices. Does not depend on the API 31 `RenderEffect`. |
+| minSdk | 29 | Android 10+. Saving to the gallery needs no storage permission (scoped storage), and it does not depend on the API 31 `RenderEffect`. |
 | targetSdk / compileSdk | Latest stable | Play Store requirement. |
 | Build | Gradle Kotlin DSL + version catalog (`libs.versions.toml`) | Android Studio default. |
-| Package / applicationId | `com.anivision.app` (**placeholder, confirm**) | Hard to change after publishing. |
-| VCS | Git, already initialized in this directory (`master`) | |
+| Package / applicationId | `com.anivision.app` (kept unless changed before the first release) | Hard to change after publishing. |
+| VCS | Git, git-flow style: work on `feature/*`, PRs target `develop`, `main` is for releases only | Repo convention. |
 
 Library versions are not pinned in this document. Use the latest stable releases from the Android Studio template and Google Maven when scaffolding, and record them in `libs.versions.toml`.
 
@@ -66,53 +66,57 @@ Library versions are not pinned in this document. Use the latest stable releases
 ```
 anivision/
 ├── Android.md                  # this file
+├── Python.md                   # prototype plan (done)
 ├── .gitignore
 ├── README.md
-├── src/
-│   └── prototype/              # Python color-transform prototype (section 6)
-│       ├── anivision/          # package, run with `python -m anivision`
-│       ├── samples/
-│       └── requirements.txt
-└── android/                    # Android Studio project root
-    ├── settings.gradle.kts
-    ├── build.gradle.kts
-    ├── gradle/libs.versions.toml
-    └── app/
+└── src/
+    ├── prototype/              # Python color-transform prototype (section 6, done)
+    │   ├── anivision/          # package, run with `python -m anivision`
+    │   ├── export/             # matrix, golden vectors, Kotlin and GLSL constants for the app
+    │   ├── samples/
+    │   ├── scripts/
+    │   ├── tests/
+    │   └── requirements.txt
+    └── android/                # Android Studio project root
+        ├── settings.gradle.kts
         ├── build.gradle.kts
-        └── src/main/
-            ├── AndroidManifest.xml
-            ├── java/com/anivision/app/
-            │   ├── MainActivity.kt
-            │   ├── camera/        # CameraX setup, permission handling
-            │   ├── render/        # GL renderer / shader pipeline
-            │   ├── vision/        # AnimalVision profiles (matrix, blur, etc.)
-            │   └── ui/            # Compose screens and theme
-            ├── assets/shaders/    # *.glsl (vertex + fragment)
-            └── res/
+        ├── gradle/libs.versions.toml
+        └── app/
+            ├── build.gradle.kts
+            └── src/main/
+                ├── AndroidManifest.xml
+                ├── java/com/anivision/app/
+                │   ├── MainActivity.kt
+                │   ├── camera/        # CameraX setup, permission handling
+                │   ├── render/        # GL renderer / shader pipeline
+                │   ├── vision/        # AnimalVision profiles (matrix, blur, etc.)
+                │   └── ui/            # Compose screens and theme
+                ├── assets/shaders/    # *.glsl (vertex + fragment)
+                └── res/
 ```
 
-The Android project lives in `android/` at the repo root, separate from `src/prototype/` and future docs, all in the same repo.
+The Android project lives in `src/android/`, next to `src/prototype/`, in the same repo. Git ignore rules live only in the root `.gitignore`; the project has no `.gitignore` files of its own.
 
 ## 4. Prerequisites (developer machine)
 
-This repo is on **WSL2**. Android Studio is best run on the Windows side, opening the project through `\\wsl$\...` or from a Windows-side clone. Gradle builds from WSL can be slow over the 9P boundary, so decide where to keep the working copy.
+The working copy is the current directory (`C:\Users\Shared\RiderProjects\anivision`, seen from WSL2 as `/mnt/c/Users/Shared/RiderProjects/anivision`). It lives on the Windows filesystem, so Android Studio opens `src/android/` directly and Gradle builds run on the Windows side. Use WSL for git, the Python prototype and file scaffolding.
 
 Needed:
 
 - JDK 17 (bundled with Android Studio)
 - Android Studio (latest stable) with the SDK Platform, Build-Tools and Platform-Tools
-- A **physical Android device** with USB debugging. The emulator's virtual camera is poor for judging color, so real hardware is strongly preferred.
+- A **physical Android device** with USB debugging (the test device runs Android 11, API 30, which is above minSdk 29). The emulator's virtual camera is poor for judging color, so real hardware is strongly preferred.
 - Python 3.10+ with `numpy`, `pillow` for the prototype
 
 ## 5. Scaffolding steps
 
 ### Phase 0: Repo hygiene
-1. Add `.gitignore` covering Android/Gradle (`.gradle/`, `build/`, `local.properties`, `.idea/`, `*.iml`, `captures/`, `.cxx/`), Python (`__pycache__/`, `.venv/`) and OS junk.
+1. Extend `.gitignore` with Android/Gradle (`.gradle/`, `build/`, `local.properties`, `*.iml`, `captures/`, `.cxx/`) and OS junk. `.idea/` and the Python entries already exist.
 2. Add a minimal `README.md` (what the app is, how to build).
-3. First commit.
+3. Commit on `feature/android-scaffold`.
 
 ### Phase 1: Empty Android app
-1. In Android Studio: New Project, "Empty Activity" (Compose). Name `Anivision`, package `com.anivision.app`, minSdk 26, Kotlin DSL. Save it into `android/`.
+1. In Android Studio: New Project, "Empty Activity" (Compose). Name `AniVision`, package `com.anivision.app`, minSdk 29, Kotlin DSL. Save it into `src/android/`.
 2. Confirm it builds and launches on the device ("Hello" screen).
 3. Commit.
 
@@ -125,10 +129,10 @@ Needed:
 6. Commit.
 
 ### Phase 3: Quick MVP filter
-1. Create `vision/AnimalVision.kt`: a data class holding the 3x3 matrix (and later blur radius, brightness) plus a `DOG` profile using the deuteranopia starting matrix.
+1. Create `vision/AnimalVision.kt`: a data class holding the 3x3 matrix (and later blur radius, brightness) plus a `DOG` profile. Take the matrix from the prototype export, not from memory: `DOG_V2_COLOR_MATRIX_4X5` (default) or `DOG_V0_COLOR_MATRIX_4X5` (fallback) in `src/prototype/export/AnimalVisionConstants.kt.txt`. Keep the matrix as data so the default can change without a code change (`export/matrix.json` holds both, plus the generating commit).
 2. Set `PreviewView` to `ImplementationMode.COMPATIBLE` (TextureView) and apply a `ColorMatrixColorFilter` via the view's layer paint (`setLayerType(LAYER_TYPE_HARDWARE, paint)`).
 3. Add a toggle: normal vs. dog view.
-4. Verify on-device against the Python prototype output. Color will be slightly off, since the matrix runs on gamma-encoded values. This is acceptable for the MVP.
+4. Verify on-device against the Python prototype output (`python -m anivision in.jpg out.png --variant v2`). Color will be slightly off, since `ColorMatrix` runs on gamma-encoded values. This is acceptable for the MVP.
 5. Commit.
 
 ### Phase 4: Proper GPU pipeline
@@ -139,26 +143,27 @@ Needed:
    - multiply by the profile matrix (uniform `mat3`)
    - optional separable blur (acuity) and brightness lift
    - re-encode to sRGB
-3. Pass the `AnimalVision` profile as uniforms.
-4. Verify correct orientation, aspect ratio and no frame drops (target 30 fps).
-5. Commit.
+3. Pass the `AnimalVision` profile as uniforms. Use `export/animal_vision.glsl` (`mat3` arguments are **column-major**; `DOG_V2_COLUMN_MAJOR` in the Kotlin snippet is the same data for `glUniformMatrix3fv(..., false, ...)`). Gamut policy: clamp each channel to [0, 1].
+4. Blur (acuity), switch **hidden by default**: compute sigma from the real frame with `acuitySigmaPx(longEdgePx, exaggeration)` (formula and constants in `export/matrix.json` under `acuity`; default exaggeration 1.0, maximum 8.0). Blur in linear light; mirrored edges are preferred, but clamp-to-edge is fine (external camera textures may not support mirroring, and at a few pixels of sigma the difference is invisible). Shadow lift (`shadow_lift` in the same file) is optional and off by default.
+5. Verify the colour step against `export/golden_vectors.json` (73 sRGB colours, tolerance of 1 per 8-bit channel for 32-bit float math; this is unverified on a device, so check it on the target GPU). Then verify correct orientation, aspect ratio and no frame drops (target 30 fps).
+6. Commit.
 
 ### Phase 5: Features
-- Side-by-side or draggable split-screen "normal | dog" comparison.
-- Sliders for blur (acuity) and low-light boost.
-- Photo capture with the effect baked in (`ImageCapture` plus effect), saved via MediaStore.
-- Video recording with the effect (`VideoCapture` plus effect).
-- Additional profiles (cat, etc.) behind a selector.
-- Gallery import: apply the filter to existing photos.
+- Side-by-side or draggable split-screen "normal | dog" comparison. *(Done, PR #9.)*
+- Sliders for blur (acuity) and low-light boost. *(Done, PRs #8 and #10; night boost is the artistic shadow lift described in `LowLight.md`.)*
+- Photo capture with the effect baked in, saved via MediaStore. *(Done, PR #6; a plain `ImageCapture` is filtered offscreen rather than using an effect.)*
+- Video recording with the effect (`VideoCapture` plus effect). *(Out of v1 scope.)*
+- Additional profiles (cat, etc.) behind a selector. *(Out of v1 scope.)*
+- Gallery import: apply the filter to existing photos. *(Done, PR #7.)*
 
 ### Phase 6: Polish and release prep
-- App icon, name, theme (light/dark).
-- About screen with the "approximation" disclaimer and short science notes.
-- Release build config (R8/minify, signing config kept out of git), privacy policy (camera use only, no data collected), Play Console listing.
+- App icon, name, theme (light/dark). *(Icon and name done: an eye with a split iris. Theme: own palette from the icon, light and dark schemes, no dynamic colour.)*
+- About screen with the "approximation" disclaimer and short science notes. *(Done.)*
+- Release build config (R8/minify, signing config kept out of git), privacy policy (camera use only, no data collected), Play Console listing. *(Signing and R8 done; R8 needs a signed-release device test. Privacy text is in the About screen. Play Console listing not started.)*
 
-## 6. Python prototype (parallel track, do first)
+## 6. Python prototype (done, merged in PR #1)
 
-Before the shader work, validate the look on still photos:
+The prototype validated the look on still photos before the shader work. Details are in `Python.md` and `src/prototype/NOTES.md`. What it covered:
 
 1. `src/prototype/anivision/` (`python -m anivision`): load an image, linearize, apply the transform, re-encode, save.
 2. Compute the matrix from cone sensitivity curves (peaks 429 / 555 nm) and compare with the stock deuteranopia matrix.
@@ -168,17 +173,19 @@ Before the shader work, validate the look on still photos:
 ## 7. Verification checklist
 
 - [ ] Project builds from a clean clone (`./gradlew assembleDebug`)
-- [ ] Camera permission flow works (grant, deny, deny permanently)
-- [ ] Live preview runs at about 30 fps with no visible stutter on a mid-range device
+- [x] Camera permission flow works (grant, deny, deny permanently)
+- [x] Live preview runs at about 30 fps with no visible stutter on a mid-range device (verified in every mode tried on the test phone)
 - [ ] Red/green scenes collapse to yellow/brown as expected; blues and yellows stay distinct; grays stay neutral
-- [ ] Preview matches the Python prototype output within a small tolerance
-- [ ] Rotation, front/back camera and app backgrounding/resume don't crash
-- [ ] Captured photos/videos match what the preview showed (Phase 5)
+- [x] Preview matches the Python prototype output within a small tolerance (GPU golden vectors match within tolerance 1)
+- [x] Rotation and app backgrounding/resume don't crash (verified on the back camera, including lock/unlock)
+- [ ] Front camera works: not implemented in v1, which uses the back camera only (deferred, see section 8)
+- [x] A signed release build with R8 on runs the whole app (preview, photos, gallery import, split, blur, night boost, About); see `src/android/RELEASING.md`
+- [x] Captured photos match what the preview showed (Phase 5; photos only, verified on the back camera in Dog view; video is out of v1 scope)
 
-## 8. Open questions
+## 8. Decisions on the former open questions
 
-1. Final **applicationId / app name** (`com.anivision.app` is a placeholder).
-2. Where will the working copy live for Android Studio (Windows filesystem vs. WSL)?
-3. Which physical test device(s) are available?
-4. Is video recording in scope for v1, or photo only?
-5. Should other animals (cat, etc.) ship in v1 or stay as a later extension?
+1. **applicationId / app name:** `com.anivision.app` stays unless changed before the first release.
+2. **Working copy:** the current directory (Windows filesystem, also reachable from WSL).
+3. **Test device:** one physical phone on Android 11 (API 30).
+4. **Video recording:** out of v1 scope for now; photo capture comes in Phase 5.
+5. **Other animals:** dog only for now. Cat stays a later extension.

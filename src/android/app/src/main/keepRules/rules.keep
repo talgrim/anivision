@@ -1,0 +1,17 @@
+# Add project specific R8 rules here.
+# AGP will combine all keep rule files in src/main/keepRules to pass to R8
+#
+# For more details, see
+#   https://d.android.com/r/tools/r8/keep-rules
+
+# If your project uses WebView with JS, uncomment the following
+# and specify the fully qualified class name to the JavaScript interface
+# class:
+#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
+#   public *;
+#}
+# The Kotlin stdlib is built from multifile facades (CollectionsKt extends CollectionsKt___CollectionsKt
+# and so on) whose parts are package-private. With R8's default renaming and repackaging the release
+# build crashed at launch ("IllegalAccessError: Class kotlin.collections.d extended by class lq is
+# inaccessible"). Keep the stdlib's names and packages; unused code is still removed.
+-keepnames class kotlin.** { *; }

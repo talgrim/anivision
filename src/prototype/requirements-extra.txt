@@ -1,0 +1,2 @@
+# Optional: enables the V1 cross-check (compare_variants.py skips V1 if absent).
+colour-science

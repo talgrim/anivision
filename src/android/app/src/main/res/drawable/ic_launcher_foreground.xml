@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- An eye whose iris is split like the app's Normal | Dog view: the left half in a red, the right half
+     in the muted khaki a dog's cones would make of it. Everything sits inside the 66 dp safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Eye -->
+    <path
+        android:fillColor="#F4F1EA"
+        android:pathData="M22,54 Q54,24 86,54 Q54,84 22,54 Z" />
+    <!-- Iris, left half: how a person sees it -->
+    <path
+        android:fillColor="#D2453B"
+        android:pathData="M54,41 A13,13 0 0 0 54,67 Z" />
+    <!-- Iris, right half: the dog approximation -->
+    <path
+        android:fillColor="#A89A52"
+        android:pathData="M54,41 A13,13 0 0 1 54,67 Z" />
+    <!-- Pupil -->
+    <path
+        android:fillColor="#141414"
+        android:pathData="M54,48 A6,6 0 1 0 54,60 A6,6 0 1 0 54,48 Z" />
+</vector>
