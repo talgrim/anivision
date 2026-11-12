@@ -140,7 +140,7 @@ Needed:
    - optional separable blur (acuity) and brightness lift
    - re-encode to sRGB
 3. Pass the `AnimalVision` profile as uniforms. Use `export/animal_vision.glsl` (`mat3` arguments are **column-major**; `DOG_V2_COLUMN_MAJOR` in the Kotlin snippet is the same data for `glUniformMatrix3fv(..., false, ...)`). Gamut policy: clamp each channel to [0, 1].
-4. Blur (acuity), switch **hidden by default**: compute sigma from the real frame with `acuitySigmaPx(longEdgePx, exaggeration)` (formula and constants in `export/matrix.json` under `acuity`; default exaggeration 1.0, maximum 8.0). Blur in linear light, mirrored edges. Shadow lift (`shadow_lift` in the same file) is optional and off by default.
+4. Blur (acuity), switch **hidden by default**: compute sigma from the real frame with `acuitySigmaPx(longEdgePx, exaggeration)` (formula and constants in `export/matrix.json` under `acuity`; default exaggeration 1.0, maximum 8.0). Blur in linear light; mirrored edges are preferred, but clamp-to-edge is fine (external camera textures may not support mirroring, and at a few pixels of sigma the difference is invisible). Shadow lift (`shadow_lift` in the same file) is optional and off by default.
 5. Verify the colour step against `export/golden_vectors.json` (73 sRGB colours, tolerance of 1 per 8-bit channel for 32-bit float math; this is unverified on a device, so check it on the target GPU). Then verify correct orientation, aspect ratio and no frame drops (target 30 fps).
 6. Commit.
 
