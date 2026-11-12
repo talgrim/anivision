@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -33,6 +34,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.anivision.app.BuildConfig
 import com.anivision.app.R
 import com.anivision.app.camera.CameraPreview
 import com.anivision.app.photo.PhotoCapturer
@@ -63,6 +65,7 @@ fun CameraScreen() {
     var nightBoost by rememberSaveable { mutableStateOf(false) }
     var nightStrength by rememberSaveable { mutableFloatStateOf(NightBoost.DEFAULT_STRENGTH) }
     var saving by remember { mutableStateOf(false) }
+    var showAbout by rememberSaveable { mutableStateOf(false) }
 
     val imageCapture = remember { ImageCapture.Builder().build() }
     val capturer = remember(imageCapture) { PhotoCapturer(context.applicationContext, imageCapture) }
@@ -165,6 +168,11 @@ fun CameraScreen() {
         return
     }
 
+    if (showAbout) {
+        AboutScreen(versionName = BuildConfig.VERSION_NAME, onClose = { showAbout = false })
+        return
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         CameraPreview(
             modifier = Modifier.fillMaxSize(),
@@ -179,6 +187,13 @@ fun CameraScreen() {
                 modifier = Modifier.fillMaxSize(),
             )
         }
+        AboutButton(
+            onClick = { showAbout = true },
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .statusBarsPadding()
+                .padding(top = 8.dp, end = 16.dp),
+        )
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
