@@ -92,3 +92,11 @@ def test_monochromatic_rgb_has_negative_red_at_475():
 def test_v2_is_registered_as_a_variant():
     assert get_variant("v2") is DOG_V2
     np.testing.assert_allclose(DOG_V2, dv.derive().matrix)
+
+
+def test_shared_variant_matrices_are_read_only():
+    for name in ("v0", "v2"):
+        matrix = get_variant(name)
+        assert not matrix.flags.writeable
+        with pytest.raises(ValueError):
+            matrix[0, 0] = 0.0

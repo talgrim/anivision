@@ -140,3 +140,28 @@ def test_cli_rejects_bad_parameters(tmp_path):
     assert exc.value.code == 2
     with pytest.raises(SystemExit):
         cli.main([str(src), str(tmp_path / "o.png"), "--acuity", "--hfov", "-5"])
+
+
+def test_cli_reports_a_missing_input_without_a_traceback(tmp_path, capsys):
+    with pytest.raises(SystemExit) as exc:
+        cli.main([str(tmp_path / "missing.png"), str(tmp_path / "o.png")])
+    assert exc.value.code == 2
+    assert "not found" in capsys.readouterr().err
+
+
+def test_cli_reports_a_file_that_is_not_an_image(tmp_path, capsys):
+    src = tmp_path / "notes.png"
+    src.write_text("this is not an image")
+    with pytest.raises(SystemExit) as exc:
+        cli.main([str(src), str(tmp_path / "o.png")])
+    assert exc.value.code == 2
+    assert "cannot read" in capsys.readouterr().err
+
+
+def test_cli_reports_an_unwritable_output(tmp_path, capsys):
+    src = tmp_path / "in.png"
+    Image.fromarray(np.zeros((4, 4, 3), dtype=np.uint8)).save(src)
+    with pytest.raises(SystemExit) as exc:
+        cli.main([str(src), str(tmp_path / "no-such-folder" / "o.png")])
+    assert exc.value.code == 2
+    assert "cannot write" in capsys.readouterr().err
