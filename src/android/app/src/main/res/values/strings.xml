@@ -37,4 +37,19 @@
     <string name="share_title">Share photo</string>
 
     <string name="camera_unavailable">The camera could not be started.</string>
+    <string name="camera_retry">Try again</string>
+
+    <string name="about">About</string>
+    <string name="about_title">About AniVision</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="about_disclaimer_title">An approximation, not a dog\'s experience</string>
+    <string name="about_disclaimer">AniVision shows an approximation of what a dog\'s cone cells might capture. It cannot show what a dog actually sees or experiences: that depends on the brain, not only on the eye.</string>
+    <string name="about_colour_title">Colour</string>
+    <string name="about_colour">People have three kinds of colour-sensitive cone cells. Dogs have two, so they are generally thought to tell blues and yellows apart well but to confuse reds and greens, which look like muted yellows and browns. The Dog view applies that kind of colour mapping to the camera image.</string>
+    <string name="about_blur_title">Acuity blur</string>
+    <string name="about_blur">Dogs see less fine detail than people. The optional blur softens the image to hint at that. It is exaggerated on purpose so that the effect is visible on a phone screen.</string>
+    <string name="about_night_title">Night boost</string>
+    <string name="about_night">Night boost brightens the shadows. It is an artistic effect to help show dim scenes, not a model of how dogs see in the dark.</string>
+    <string name="about_privacy_title">Privacy</string>
+    <string name="about_privacy">AniVision uses the camera only to show the live view and take photos. Photos are saved to Pictures/AniVision on your device. Nothing is collected or sent anywhere.</string>
 </resources>

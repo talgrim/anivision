@@ -149,17 +149,17 @@ Needed:
 6. Commit.
 
 ### Phase 5: Features
-- Side-by-side or draggable split-screen "normal | dog" comparison.
-- Sliders for blur (acuity) and low-light boost.
-- Photo capture with the effect baked in (`ImageCapture` plus effect), saved via MediaStore.
-- Video recording with the effect (`VideoCapture` plus effect).
-- Additional profiles (cat, etc.) behind a selector.
-- Gallery import: apply the filter to existing photos.
+- Side-by-side or draggable split-screen "normal | dog" comparison. *(Done, PR #9.)*
+- Sliders for blur (acuity) and low-light boost. *(Done, PRs #8 and #10; night boost is the artistic shadow lift described in `LowLight.md`.)*
+- Photo capture with the effect baked in, saved via MediaStore. *(Done, PR #6; a plain `ImageCapture` is filtered offscreen rather than using an effect.)*
+- Video recording with the effect (`VideoCapture` plus effect). *(Out of v1 scope.)*
+- Additional profiles (cat, etc.) behind a selector. *(Out of v1 scope.)*
+- Gallery import: apply the filter to existing photos. *(Done, PR #7.)*
 
 ### Phase 6: Polish and release prep
-- App icon, name, theme (light/dark).
-- About screen with the "approximation" disclaimer and short science notes.
-- Release build config (R8/minify, signing config kept out of git), privacy policy (camera use only, no data collected), Play Console listing.
+- App icon, name, theme (light/dark). *(Icon and name done: an eye with a split iris. Theme still uses the template colours.)*
+- About screen with the "approximation" disclaimer and short science notes. *(Done.)*
+- Release build config (R8/minify, signing config kept out of git), privacy policy (camera use only, no data collected), Play Console listing. *(Signing and R8 done; R8 needs a signed-release device test. Privacy text is in the About screen. Play Console listing not started.)*
 
 ## 6. Python prototype (done, merged in PR #1)
 
@@ -177,7 +177,9 @@ The prototype validated the look on still photos before the shader work. Details
 - [x] Live preview runs at about 30 fps with no visible stutter on a mid-range device (verified in every mode tried on the test phone)
 - [ ] Red/green scenes collapse to yellow/brown as expected; blues and yellows stay distinct; grays stay neutral
 - [x] Preview matches the Python prototype output within a small tolerance (GPU golden vectors match within tolerance 1)
-- [ ] Rotation, front/back camera and app backgrounding/resume don't crash (rotation and backgrounding/resume verified in Phase 2, back camera only)
+- [x] Rotation and app backgrounding/resume don't crash (verified on the back camera, including lock/unlock)
+- [ ] Front camera works: not implemented in v1, which uses the back camera only (deferred, see section 8)
+- [x] A signed release build with R8 on runs the whole app (preview, photos, gallery import, split, blur, night boost, About); see `src/android/RELEASING.md`
 - [x] Captured photos match what the preview showed (Phase 5; photos only, verified on the back camera in Dog view; video is out of v1 scope)
 
 ## 8. Decisions on the former open questions

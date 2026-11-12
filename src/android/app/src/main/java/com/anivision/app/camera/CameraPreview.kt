@@ -12,6 +12,7 @@ import androidx.camera.view.PreviewView
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -65,8 +66,10 @@ fun CameraPreview(
     val previewView = remember { PreviewView(context) }
     val currentSettings = rememberUpdatedState(settings)
     var failed by remember { mutableStateOf(false) }
+    // Bumped by the retry button: it restarts the effect below, which rebuilds the whole pipeline.
+    var attempt by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(previewView, lifecycleOwner, lensFacing) {
+    LaunchedEffect(previewView, lifecycleOwner, lensFacing, attempt) {
         failed = false
         val provider = ProcessCameraProvider.awaitInstance(context)
         val preview = Preview.Builder().build()
@@ -99,6 +102,7 @@ fun CameraPreview(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            Log.e(TAG, "Camera could not be started", e)
             failed = true
         } finally {
             provider.unbind(*listOfNotNull(preview, imageCapture).toTypedArray())
@@ -107,7 +111,12 @@ fun CameraPreview(
     }
 
     if (failed) {
-        MessageScreen(title = stringResource(R.string.app_name), message = stringResource(R.string.camera_unavailable))
+        MessageScreen(
+            title = stringResource(R.string.app_name),
+            message = stringResource(R.string.camera_unavailable),
+            actionLabel = stringResource(R.string.camera_retry),
+            onAction = { attempt++ },
+        )
     } else {
         AndroidView(factory = { previewView }, modifier = modifier)
     }

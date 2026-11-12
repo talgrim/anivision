@@ -75,11 +75,17 @@ def main(argv: list[str] | None = None) -> int:
     except ImportError as exc:  # v1 without colour-science
         parser.error(str(exc))
     try:
+        image = load_rgb(args.input)
+    except FileNotFoundError:
+        parser.error(f"input image not found: {args.input}")
+    except OSError as exc:  # unreadable file or a format Pillow cannot identify
+        parser.error(f"cannot read {args.input} as an image: {exc}")
+    try:
         acuity = (
             AcuityParams(args.acuity_ratio, args.hfov, args.exaggeration) if args.acuity else None
         )
         result = simulate(
-            load_rgb(args.input),
+            image,
             matrix,
             acuity=acuity,
             shadow_gamma=args.shadow_lift,
@@ -87,7 +93,10 @@ def main(argv: list[str] | None = None) -> int:
         )
     except ValueError as exc:
         parser.error(str(exc))
-    save_rgb(args.output, result.image)
+    try:
+        save_rgb(args.output, result.image)
+    except (OSError, ValueError) as exc:  # missing folder, unknown extension, no permission
+        parser.error(f"cannot write {args.output}: {exc}")
     fit = "clipped" if args.gamut == "clip" else "desaturated to fit"
     blur = f", blur sigma {result.blur_sigma_px:.2f} px" if args.acuity else ""
     print(

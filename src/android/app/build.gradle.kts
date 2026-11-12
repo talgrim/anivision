@@ -43,11 +43,12 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.findByName("release")
-            // R8 is off: with it on, the release APK crashed at start-up (IllegalAccessError, R8 split
-            // the Kotlin stdlib's CollectionsKt__* class hierarchy across packages). Turn it back on
-            // only together with keep rules, and test a signed release build on a device.
+            // R8 shrinks and obfuscates the release build. The Kotlin stdlib's names are kept (see
+            // src/main/keepRules/rules.keep): without that the APK crashed at start-up, because R8 moved
+            // the stdlib's CollectionsKt__* classes into different packages (IllegalAccessError). If a
+            // signed release build misbehaves, set enable = false and say so in RELEASING.md.
             optimization {
-                enable = false
+                enable = true
             }
         }
     }

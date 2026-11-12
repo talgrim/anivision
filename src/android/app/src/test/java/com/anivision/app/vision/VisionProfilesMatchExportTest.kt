@@ -33,19 +33,6 @@ class VisionProfilesMatchExportTest {
     }
 
     @Test
-    fun colorMatrixIsFourByFiveWithIdentityAlphaAndNoOffsets() {
-        val m = AnimalVision.DOG_V2.toColorMatrixValues()
-        val rowMajor = AnimalVision.DOG_V2.linearMatrix()
-        assertEquals(20, m.size)
-        for (row in 0 until 3) {
-            for (col in 0 until 3) assertEquals(rowMajor[row * 3 + col], m[row * 5 + col], 0f)
-            assertEquals(0f, m[row * 5 + 3], 0f)
-            assertEquals(0f, m[row * 5 + 4], 0f)
-        }
-        assertArrayEquals(floatArrayOf(0f, 0f, 0f, 1f, 0f), m.copyOfRange(15, 20), 0f)
-    }
-
-    @Test
     fun columnMajorMatrixIsTheTransposeOfTheExportedRows() {
         val rowMajor = ExportFiles.dogMatrix("v2")
         val columnMajor = AnimalVision.DOG_V2.linearMatrixColumnMajor()

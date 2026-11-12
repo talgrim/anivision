@@ -26,10 +26,23 @@ class SplitCaptionsTest {
     }
 
     @Test
-    fun leavesTheRestOfThePhotoAlone() {
+    fun leavesTheRestOfThePhotoAloneApartFromTheDividerLine() {
         SplitCaptions().draw(bitmap, 0.5f, "Normal", "Dog")
 
-        assertEquals(0, changed(0 until WIDTH, BOTTOM_BAND))
+        assertEquals(0, changed(0 until WIDTH / 2 - LINE_CLEARANCE, BOTTOM_BAND))
+        assertEquals(0, changed(WIDTH / 2 + LINE_CLEARANCE until WIDTH, BOTTOM_BAND))
+    }
+
+    @Test
+    fun drawsTheDividerLineTopToBottomAtTheSplit() {
+        SplitCaptions().draw(bitmap, 0.3f, "Normal", "Dog")
+
+        val seam = (WIDTH * 0.3f).toInt()
+        for (y in listOf(0, HEIGHT / 4, HEIGHT / 2, HEIGHT - 1)) {
+            assertTrue("no divider line at row $y", bitmap.getPixel(seam, y) != BACKGROUND)
+        }
+        assertEquals(BACKGROUND, bitmap.getPixel(seam - LINE_CLEARANCE, HEIGHT / 2))
+        assertEquals(BACKGROUND, bitmap.getPixel(seam + LINE_CLEARANCE, HEIGHT / 2))
     }
 
     @Test
@@ -40,7 +53,7 @@ class SplitCaptionsTest {
         assertTrue("left caption missing", changed(0 until seam, TOP_BAND) > 0)
         assertTrue("right caption missing", changed(WIDTH * 8 / 10 until WIDTH, TOP_BAND) > 0)
         // The stretch from the divider to well short of the right edge holds neither caption.
-        assertEquals(0, changed(seam until WIDTH * 8 / 10, TOP_BAND))
+        assertEquals(0, changed(seam + LINE_CLEARANCE until WIDTH * 8 / 10, TOP_BAND))
     }
 
     @Test
@@ -48,16 +61,24 @@ class SplitCaptionsTest {
         SplitCaptions().draw(bitmap, 0.1f, "Normal", "Dog")
 
         // The 100 px left half is too narrow for its caption and stays clean ...
-        assertEquals("narrow left half should stay clean", 0, changed(0 until WIDTH / 10, TOP_BAND))
+        assertEquals(
+            "narrow left half should stay clean",
+            0,
+            changed(0 until WIDTH / 10 - LINE_CLEARANCE, TOP_BAND),
+        )
         // ... which appears just right of the divider instead, and the right caption stays at the right edge.
-        assertTrue("pointer caption missing", changed(WIDTH / 10 until WIDTH * 3 / 10, TOP_BAND) > 0)
+        assertTrue("pointer caption missing", changed(WIDTH / 10 + LINE_CLEARANCE until WIDTH * 3 / 10, TOP_BAND) > 0)
         assertEquals(0, changed(WIDTH * 4 / 10 until WIDTH * 8 / 10, TOP_BAND))
         assertTrue("right caption missing", changed(WIDTH * 8 / 10 until WIDTH, TOP_BAND) > 0)
 
         bitmap.eraseColor(BACKGROUND)
         SplitCaptions().draw(bitmap, 0.95f, "Normal", "Dog")
 
-        assertEquals("narrow right half should stay clean", 0, changed(WIDTH * 95 / 100 until WIDTH, TOP_BAND))
+        assertEquals(
+            "narrow right half should stay clean",
+            0,
+            changed(WIDTH * 95 / 100 + LINE_CLEARANCE until WIDTH, TOP_BAND),
+        )
         assertTrue("pointer caption missing", changed(WIDTH * 8 / 10 until WIDTH * 95 / 100, TOP_BAND) > 0)
         assertEquals(0, changed(WIDTH * 3 / 10 until WIDTH * 8 / 10, TOP_BAND))
         assertTrue("left caption missing", changed(0 until WIDTH * 3 / 10, TOP_BAND) > 0)
@@ -85,6 +106,9 @@ class SplitCaptionsTest {
         const val WIDTH = 1000
         const val HEIGHT = 800
         const val BACKGROUND = 0xFF3366CC.toInt()
+
+        /** Columns on either side of the divider that the line (about 3 px wide here) never reaches. */
+        const val LINE_CLEARANCE = 5
         val TOP_BAND = 0 until 100
         val BOTTOM_BAND = 150 until 800
     }
