@@ -157,7 +157,7 @@ Needed:
 - Gallery import: apply the filter to existing photos. *(Done, PR #7.)*
 
 ### Phase 6: Polish and release prep
-- App icon, name, theme (light/dark). *(Icon and name done: an eye with a split iris. Theme still uses the template colours.)*
+- App icon, name, theme (light/dark). *(Icon and name done: an eye with a split iris. Theme: own palette from the icon, light and dark schemes, no dynamic colour.)*
 - About screen with the "approximation" disclaimer and short science notes. *(Done.)*
 - Release build config (R8/minify, signing config kept out of git), privacy policy (camera use only, no data collected), Play Console listing. *(Signing and R8 done; R8 needs a signed-release device test. Privacy text is in the About screen. Play Console listing not started.)*
 

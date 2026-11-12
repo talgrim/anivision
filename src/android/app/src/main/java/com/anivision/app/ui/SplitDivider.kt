@@ -76,6 +76,7 @@ fun SplitDivider(
                 modifier = Modifier.size(HANDLE_SIZE),
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                contentColor = MaterialTheme.colorScheme.onSurface,
             ) {
                 Box(contentAlignment = Alignment.Center) { Text("◂▸") }
             }

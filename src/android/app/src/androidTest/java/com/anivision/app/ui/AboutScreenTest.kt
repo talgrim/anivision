@@ -2,6 +2,7 @@ package com.anivision.app.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.platform.app.InstrumentationRegistry
@@ -43,7 +44,7 @@ class AboutScreenTest {
         var clicks = 0
         compose.setContent { AboutButton(onClick = { clicks++ }) }
 
-        compose.onNodeWithText(resources.getString(R.string.about)).performClick()
+        compose.onNodeWithContentDescription(resources.getString(R.string.about)).performClick()
 
         assertEquals(1, clicks)
     }
