@@ -27,14 +27,6 @@ class VisionProfile(val id: String, rowMajor: FloatArray) {
         matrix[2], matrix[5], matrix[8],
     )
 
-    /** `android.graphics.ColorMatrix` layout: 4x5 row-major, alpha row identity, zero offsets. */
-    fun toColorMatrixValues(): FloatArray = floatArrayOf(
-        matrix[0], matrix[1], matrix[2], 0f, 0f,
-        matrix[3], matrix[4], matrix[5], 0f, 0f,
-        matrix[6], matrix[7], matrix[8], 0f, 0f,
-        0f, 0f, 0f, 1f, 0f,
-    )
-
     /** Multiplies a linear-light RGB triple by the matrix. No clamping. */
     fun applyLinear(r: Double, g: Double, b: Double): DoubleArray = doubleArrayOf(
         matrix[0] * r + matrix[1] * g + matrix[2] * b,
