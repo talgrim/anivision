@@ -111,3 +111,24 @@ def test_cli_end_to_end(tmp_path):
     with Image.open(dst) as im:
         assert im.size == (12, 8)
         assert im.mode == "RGB"
+
+
+def test_cli_acuity_gamut_and_lift_flags(tmp_path, capsys):
+    src, dst = tmp_path / "in.png", tmp_path / "out.png"
+    Image.fromarray(np.random.default_rng(0).integers(0, 256, (40, 60, 3), dtype=np.uint8)).save(src)
+    args = [str(src), str(dst), "--variant", "v2", "--acuity", "--exaggeration", "3",
+            "--gamut", "desaturate", "--shadow-lift", "0.8"]
+    assert cli.main(args) == 0
+    err = capsys.readouterr().err
+    assert "blur sigma" in err and "desaturated" in err
+    assert dst.exists()
+
+
+def test_cli_rejects_bad_parameters(tmp_path):
+    src = tmp_path / "in.png"
+    Image.fromarray(np.zeros((4, 4, 3), dtype=np.uint8)).save(src)
+    with pytest.raises(SystemExit) as exc:
+        cli.main([str(src), str(tmp_path / "o.png"), "--shadow-lift", "1.5"])
+    assert exc.value.code == 2
+    with pytest.raises(SystemExit):
+        cli.main([str(src), str(tmp_path / "o.png"), "--acuity", "--hfov", "-5"])

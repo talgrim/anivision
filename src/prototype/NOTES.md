@@ -246,3 +246,83 @@ take the matrix as data so the default can change without a code change.
 - Brettel et al. use two half-planes (475 nm on the blue side, 575 nm on the yellow side); V2
   uses a single plane. The 575 nm anchor moves the matrix by only 0.079, so this is low priority.
 - The display model remains the largest unknown. Real phone primaries would tighten V2.
+
+## Phase 4: acuity, gamut policy and shadow lift (2026-11-12)
+
+Pipeline order in `simulate()`: decode sRGB -> linear, **acuity blur**, **shadow lift**,
+colour matrix, gamut fit, encode. The first three are linear (or a per-pixel scale), so they
+commute with the matrix and nothing is clipped before the blur.
+
+### Acuity blur (`anivision/acuity.py`, `scripts/acuity_sweep.py`)
+
+```
+cutoff       f_c   = 30 cpd / acuity_ratio                 (dog: 8 cycles/deg)
+sigma_px     = k * (acuity_ratio / 60 / 2) * (long_edge_px / hfov_deg) * exaggeration
+k            = 2 sqrt(2 ln(1/m)) / pi = 1.366   for m = 0.1
+```
+
+- The plan's formula leaves `k` unspecified. I fixed it with an explicit criterion: the Gaussian's
+  contrast transfer `exp(-2 pi^2 sigma^2 f^2)` falls to **m = 0.1 at the dog's cutoff frequency**.
+  A test checks this at 8 cpd. A different m only changes the baseline; `exaggeration` scales on top.
+- Defaults: `acuity_ratio` 3.75, `hfov_deg` 70 (along the **long edge**, so portrait and landscape
+  frames from one camera get the same blur per degree), `exaggeration` 1.
+- Blur is done in linear light by an FFT Gaussian with mirrored edges (exact, same cost for any sigma;
+  numpy only). A test confirms a black/white checker averages to sRGB 0.735, not 0.5.
+- The viewer's own eye blur is not subtracted (it depends on viewing distance, which is unknown).
+
+Sigma in pixels (baseline x1 and the exaggeration steps I looked at):
+
+| exaggeration | 1920 px | 1440 px | 1080 px | 640 px | contrast kept at 8 cpd |
+|---|---|---|---|---|---|
+| x1 | 1.17 | 0.88 | 0.66 | 0.39 | 10% |
+| x2 | 2.34 | 1.76 | 1.32 | 0.78 | 0.01% |
+| x4 | 4.68 | 3.51 | 2.63 | 1.56 | ~0 |
+| x8 | 9.37 | 7.03 | 5.27 | 3.12 | ~0 |
+| x16 | 18.74 | 14.05 | 10.54 | 6.25 | ~0 |
+
+Looked at by eye (100% crops of the 1920 px photos, plus whole frames; `out/acuity_sweep_*.png`):
+x1 is a faint softening of fine texture (gravel, hair strands), nearly invisible on a whole frame,
+as `Python.md` predicted. x2 clearly softens texture while shapes and features stay intact. x4 is
+unmistakably blurry vision, with the dog and the face still readable. x8 is heavy: facial features
+become blobs but the scene is still recognisable. x16 destroys the content.
+
+**Product context (from the user):** the Android app will have a switch to show or hide the blur,
+**hidden by default**. So the blur is an explicit opt-in, and the exaggeration default only applies
+once someone turns it on. The CLI matches: no blur unless `--acuity` is given.
+
+**Chosen: default exaggeration 1.0 (the physical baseline), maximum 8.0.** At preview sizes the
+default is barely visible (sigma 0.4-0.7 px at 640-1080 px). Because the blur is now behind a
+switch, someone who turns it on probably expects to see it, so an on-state default of roughly 3-4
+is worth considering (open; a one-number change in `acuity.py`). The Android code must
+compute sigma from the actual frame's long edge using the formula above, not hard-code pixels.
+
+### Gamut policy (`anivision/gamut.py`, `scripts/gamut_policies.py`)
+
+Phase 3 flagged that V2 clips saturated blues, and suggested a gentler policy. I tried
+`desaturate`: pull an out-of-gamut colour toward the gray of equal luminance, just far enough to
+fit. Scored against the unclipped colour the matrix asked for, on the out-of-gamut pixels:
+
+| policy | pixels | mean dE00 | mean dL* | median hue error | median chroma kept |
+|---|---|---|---|---|---|
+| clip (per channel) | 338,827 | 3.35 | 1.37 | 2.2 deg | 99% |
+| desaturate | 338,827 | 4.49 | 0.00 | 0.3 deg | 84% |
+
+`desaturate` keeps lightness and hue but gives up chroma, and CIEDE2000 penalises that more than
+`clip`'s small lightness and hue shifts. Visually it is worse on saturated colours: pure blue turns
+into a dim steel blue and pure yellow into pale cream. On the photos the two are indistinguishable.
+
+**Chosen: keep `clip` as the default.** This reverses the Phase 3 follow-up. `desaturate` stays
+available (`--gamut desaturate`) so the comparison can be rerun, but it is not recommended. The
+Android shader should simply clamp each channel.
+
+### Shadow lift (`anivision/lowlight.py`, `scripts/lowlight_sweep.py`)
+
+Artistic, not physiological, and off by default. A gamma on luminance that keeps colour ratios
+(`rgb * Y^(gamma-1)`), so hue and saturation are unchanged and black stays black. By eye on dark
+and mid-tone photos: gamma 0.85 opens up shadows naturally, 0.7 is the strongest lift before the
+blacks look veiled, 0.55 is hazy. **Suggested 0.85, strongest 0.7.**
+
+### CLI
+
+`--acuity [--exaggeration X --hfov D --acuity-ratio R]`, `--gamut clip|desaturate`,
+`--shadow-lift GAMMA`; the status line reports the blur sigma in pixels.

@@ -1,7 +1,9 @@
 """Apply a 3x3 colour matrix to an image in linear light.
 
-Pipeline: decode sRGB -> linear, multiply by the matrix, clip to [0, 1]
-(counting out-of-gamut pixels first), re-encode to sRGB.
+Pipeline: decode sRGB -> linear, [acuity blur], [shadow lift], multiply by the matrix, fit to
+the display gamut (counting out-of-gamut pixels first), re-encode to sRGB. The bracketed steps
+are optional and run before the matrix: they are linear (or a per-pixel scale), so they commute
+with it and nothing is clipped before the blur.
 """
 
 from __future__ import annotations
@@ -10,7 +12,10 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from .acuity import AcuityParams, blur_for_image
 from .colorspace import from_float, linear_to_srgb, srgb_to_linear, to_float
+from .gamut import fit_to_gamut
+from .lowlight import lift_shadows
 
 # Tolerance so that rounding noise (e.g. white mapping to 1.0000000000000002)
 # is not reported as out of gamut.
@@ -24,6 +29,7 @@ class SimResult:
     image: np.ndarray
     out_of_gamut_pixels: int
     total_pixels: int
+    blur_sigma_px: float = 0.0
 
     @property
     def out_of_gamut_fraction(self) -> float:
@@ -45,22 +51,36 @@ def count_out_of_gamut(linear_rgb: np.ndarray) -> int:
     return int(np.count_nonzero(bad.any(axis=-1)))
 
 
-def simulate(img: np.ndarray, matrix: np.ndarray) -> SimResult:
+def simulate(
+    img: np.ndarray,
+    matrix: np.ndarray,
+    *,
+    acuity: AcuityParams | None = None,
+    shadow_gamma: float = 1.0,
+    gamut: str = "clip",
+) -> SimResult:
     """Run ``img`` (sRGB uint8 / uint16 / float, ``(..., 3)``) through ``matrix``.
 
+    ``acuity`` enables the acuity blur, ``shadow_gamma < 1`` the artistic shadow lift, and
+    ``gamut`` picks how out-of-gamut results are fitted ("clip" or "desaturate").
     The output has the input's integer dtype, or float64 for float input.
     """
     arr = np.asarray(img)
     out_dtype = arr.dtype if arr.dtype in (np.uint8, np.uint16) else np.float64
 
     linear = srgb_to_linear(to_float(arr))
+    sigma = 0.0
+    if acuity is not None:
+        linear, sigma = blur_for_image(linear, acuity)
+    if shadow_gamma != 1.0:
+        linear = lift_shadows(linear, shadow_gamma)
     mapped = apply_matrix(linear, matrix)
     n_bad = count_out_of_gamut(mapped)
-    clipped = np.clip(mapped, 0.0, 1.0)
-    encoded = linear_to_srgb(clipped)
+    encoded = linear_to_srgb(fit_to_gamut(mapped, gamut))
 
     return SimResult(
         image=from_float(encoded, out_dtype),
         out_of_gamut_pixels=n_bad,
         total_pixels=int(np.prod(arr.shape[:-1])),
+        blur_sigma_px=sigma,
     )

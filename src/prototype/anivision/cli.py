@@ -8,6 +8,8 @@ import sys
 import numpy as np
 from PIL import Image, ImageOps
 
+from .acuity import DEFAULT_EXAGGERATION, MAX_EXAGGERATION, AcuityParams
+from .gamut import GAMUT_POLICIES
 from .simulate import simulate
 from .variants import VARIANT_IDS, get_variant
 
@@ -39,6 +41,29 @@ def build_parser() -> argparse.ArgumentParser:
         choices=list(VARIANT_IDS),
         help="colour transform variant (default: %(default)s)",
     )
+    p.add_argument("--acuity", action="store_true", help="also apply the dog acuity blur")
+    p.add_argument(
+        "--exaggeration",
+        type=float,
+        default=DEFAULT_EXAGGERATION,
+        help=f"multiplier on the physical acuity blur width (with --acuity; default %(default)s, "
+        f"suggested maximum {MAX_EXAGGERATION:g})",
+    )
+    p.add_argument("--hfov", type=float, default=70.0, help="camera field of view along the long edge, degrees")
+    p.add_argument("--acuity-ratio", type=float, default=3.75, help="dog/human acuity ratio (20/75 -> 3.75)")
+    p.add_argument(
+        "--gamut",
+        default="clip",
+        choices=list(GAMUT_POLICIES),
+        help="how out-of-gamut colours are fitted (default: %(default)s)",
+    )
+    p.add_argument(
+        "--shadow-lift",
+        type=float,
+        default=1.0,
+        metavar="GAMMA",
+        help="artistic shadow lift: luminance gamma in (0, 1], 1 = off (suggested 0.85, strongest 0.7)",
+    )
     return p
 
 
@@ -49,11 +74,25 @@ def main(argv: list[str] | None = None) -> int:
         matrix = get_variant(args.variant)
     except ImportError as exc:  # v1 without colour-science
         parser.error(str(exc))
-    result = simulate(load_rgb(args.input), matrix)
+    try:
+        acuity = (
+            AcuityParams(args.acuity_ratio, args.hfov, args.exaggeration) if args.acuity else None
+        )
+        result = simulate(
+            load_rgb(args.input),
+            matrix,
+            acuity=acuity,
+            shadow_gamma=args.shadow_lift,
+            gamut=args.gamut,
+        )
+    except ValueError as exc:
+        parser.error(str(exc))
     save_rgb(args.output, result.image)
+    fit = "clipped" if args.gamut == "clip" else "desaturated to fit"
+    blur = f", blur sigma {result.blur_sigma_px:.2f} px" if args.acuity else ""
     print(
         f"{args.variant}: {result.out_of_gamut_pixels}/{result.total_pixels} pixels "
-        f"({result.out_of_gamut_fraction:.2%}) out of gamut, clipped",
+        f"({result.out_of_gamut_fraction:.2%}) out of gamut, {fit}{blur}",
         file=sys.stderr,
     )
     return 0
