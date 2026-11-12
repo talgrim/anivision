@@ -28,6 +28,9 @@ __pycache__/
 # Prototype generated output
 src/prototype/out/
 
+# Local sample images and prototype output
+data/
+
 # Session context snapshot
 context.md
 
