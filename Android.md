@@ -178,7 +178,7 @@ The prototype validated the look on still photos before the shader work. Details
 - [ ] Red/green scenes collapse to yellow/brown as expected; blues and yellows stay distinct; grays stay neutral
 - [ ] Preview matches the Python prototype output within a small tolerance
 - [ ] Rotation, front/back camera and app backgrounding/resume don't crash (rotation and backgrounding/resume verified in Phase 2, back camera only)
-- [ ] Captured photos/videos match what the preview showed (Phase 5)
+- [x] Captured photos match what the preview showed (Phase 5; photos only, verified on the back camera in Dog view; video is out of v1 scope)
 
 ## 8. Decisions on the former open questions
 

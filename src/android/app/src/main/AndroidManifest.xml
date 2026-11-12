@@ -7,6 +7,10 @@
         android:required="true" />
 
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Saving to the gallery needs no permission on Android 10+; before that it writes to Pictures. -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
 
     <application
         android:allowBackup="true"
