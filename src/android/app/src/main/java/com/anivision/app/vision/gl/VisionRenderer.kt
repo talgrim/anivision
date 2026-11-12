@@ -5,10 +5,12 @@ import android.opengl.GLES20
 import android.opengl.GLES30
 import android.opengl.Matrix
 import com.anivision.app.vision.Acuity
+import com.anivision.app.vision.VisionProfile
 import com.anivision.app.vision.VisionSettings
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.max
+import kotlin.math.roundToInt
 
 /**
  * Draws one camera frame through the vision pipeline. Owns the external camera texture, the shader
@@ -59,25 +61,45 @@ internal class VisionRenderer {
      * produced by `SurfaceOutput.updateTransformMatrix`.
      */
     fun draw(texMatrix: FloatArray, width: Int, height: Int, settings: VisionSettings) {
-        val profile = settings.profile
-        val colourMatrix = profile?.linearMatrixColumnMajor() ?: IDENTITY_3
-        val sigma = blurSigma(settings, width, height)
-        val split = settings.split.coerceIn(0f, 1f)
-        val shadowGamma = if (profile == null) 1f else (settings.shadowGamma ?: 1f).coerceIn(MIN_SHADOW_GAMMA, 1f)
-
         GLES20.glViewport(0, 0, width, height)
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, quad)
 
-        if (sigma > MIN_SIGMA_PX && ensureBlurTarget(width, height)) {
+        // The two sides are drawn one after the other, each clipped to its half of the frame with the
+        // scissor test. The viewport stays the full frame so every pixel keeps its output-space uv.
+        val splitPx = (settings.split.coerceIn(0f, 1f) * width).roundToInt()
+        GLES20.glEnable(GLES20.GL_SCISSOR_TEST)
+        if (splitPx > 0) drawSide(settings.left, 0, splitPx, texMatrix, width, height, settings)
+        if (splitPx < width) drawSide(settings.right, splitPx, width - splitPx, texMatrix, width, height, settings)
+        GLES20.glDisable(GLES20.GL_SCISSOR_TEST)
+    }
+
+    /** Draws the columns `[x, x + sideWidth)` of the frame through [profile] (null = unfiltered). */
+    private fun drawSide(
+        profile: VisionProfile?,
+        x: Int,
+        sideWidth: Int,
+        texMatrix: FloatArray,
+        width: Int,
+        height: Int,
+        settings: VisionSettings,
+    ) {
+        GLES20.glScissor(x, 0, sideWidth, height)
+        val colourMatrix = profile?.linearMatrixColumnMajor() ?: IDENTITY_3
+        val shadowGamma = settings.shadowGammaFor(profile)
+        val periphery = profile?.peripheralBlur ?: 0f
+        val sigma = blurSigma(profile, settings, width, height)
+
+        // The blur is skipped when even the widest (corner) sigma is too small to see.
+        if (sigma * (1f + periphery) > MIN_SIGMA_PX && ensureBlurTarget(width, height)) {
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, blurFramebuffer)
             GLES20.glViewport(0, 0, width, height)
-            drawPass(blurHorizontal, GLES11Ext.GL_TEXTURE_EXTERNAL_OES, cameraTextureId, texMatrix, colourMatrix, 1f / width, 0f, sigma, split, shadowGamma)
+            drawPass(blurHorizontal, GLES11Ext.GL_TEXTURE_EXTERNAL_OES, cameraTextureId, texMatrix, colourMatrix, 1f / width, 0f, sigma, periphery, width, height, shadowGamma)
 
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
-            drawPass(blurVertical, GLES20.GL_TEXTURE_2D, blurTexture, IDENTITY_4, colourMatrix, 0f, 1f / height, sigma, split, shadowGamma)
+            drawPass(blurVertical, GLES20.GL_TEXTURE_2D, blurTexture, IDENTITY_4, colourMatrix, 0f, 1f / height, sigma, periphery, width, height, shadowGamma)
         } else {
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
-            drawPass(colour, GLES11Ext.GL_TEXTURE_EXTERNAL_OES, cameraTextureId, texMatrix, colourMatrix, 0f, 0f, 0f, split, shadowGamma)
+            drawPass(colour, GLES11Ext.GL_TEXTURE_EXTERNAL_OES, cameraTextureId, texMatrix, colourMatrix, 0f, 0f, 0f, 0f, width, height, shadowGamma)
         }
     }
 
@@ -90,10 +112,11 @@ internal class VisionRenderer {
         GLES20.glDeleteBuffers(1, intArrayOf(quad), 0)
     }
 
-    private fun blurSigma(settings: VisionSettings, width: Int, height: Int): Float {
+    /** Centre blur sigma in pixels for [profile]'s side; 0 for the unfiltered side or with the blur off. */
+    private fun blurSigma(profile: VisionProfile?, settings: VisionSettings, width: Int, height: Int): Float {
         val exaggeration = settings.blurExaggeration
-        if (settings.profile == null || exaggeration == null || blurUnsupported) return 0f
-        return Acuity.sigmaPx(max(width, height), exaggeration)
+        if (profile == null || exaggeration == null || blurUnsupported) return 0f
+        return Acuity.sigmaPx(max(width, height), exaggeration, profile.acuityRatio)
     }
 
     private fun drawPass(
@@ -105,7 +128,9 @@ internal class VisionRenderer {
         stepX: Float,
         stepY: Float,
         sigma: Float,
-        split: Float,
+        periphery: Float,
+        width: Int,
+        height: Int,
         shadowGamma: Float,
     ) {
         program.use()
@@ -116,7 +141,8 @@ internal class VisionRenderer {
         GLES20.glUniformMatrix3fv(program.uniform("uColorMatrix"), 1, false, colourMatrix, 0)
         GLES20.glUniform2f(program.uniform("uStep"), stepX, stepY)
         GLES20.glUniform1f(program.uniform("uSigma"), sigma)
-        GLES20.glUniform1f(program.uniform("uSplit"), split)
+        GLES20.glUniform1f(program.uniform("uPeriphery"), periphery)
+        GLES20.glUniform2f(program.uniform("uSize"), width.toFloat(), height.toFloat())
         GLES20.glUniform1f(program.uniform("uShadowGamma"), shadowGamma)
 
         val position = program.attribute("aPosition")
@@ -176,9 +202,6 @@ internal class VisionRenderer {
     private companion object {
         /** Below this the blur changes nothing visible; skip the two extra passes. */
         const val MIN_SIGMA_PX = 0.2f
-
-        /** The lift is only tuned down to this gamma (`LowLight.md`); a smaller one would look hazy. */
-        const val MIN_SHADOW_GAMMA = 0.5f
 
         val IDENTITY_3 = floatArrayOf(1f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 1f)
         val IDENTITY_4 = FloatArray(16).also { Matrix.setIdentityM(it, 0) }
