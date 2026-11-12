@@ -3,7 +3,7 @@
   "caveat": "Approximation of what a dog's or cat's cones capture, not of what the animal subjectively experiences. Assumes sRGB input and a modelled display (Gaussian primaries); see src/prototype/README.md.",
   "generator": {
     "script": "src/prototype/scripts/export_constants.py",
-    "git_commit": "5a858e5e0a769843c5e4b1546cc3f765322dc1b2",
+    "git_commit": "d80c76c29ebc459a46b0a956d00c353ea4e66fc4",
     "git_dirty": false
   },
   "description": "Colour step only: decode sRGB, multiply by the matrix, clamp each channel to [0, 1], encode, round to 8 bits. No blur, no shadow lift.",
