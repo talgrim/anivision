@@ -326,3 +326,28 @@ blacks look veiled, 0.55 is hazy. **Suggested 0.85, strongest 0.7.**
 
 `--acuity [--exaggeration X --hfov D --acuity-ratio R]`, `--gamut clip|desaturate`,
 `--shadow-lift GAMMA`; the status line reports the blur sigma in pixels.
+
+## Phase 5: export for Android (2026-11-12)
+
+`scripts/export_constants.py` (logic in `anivision/export.py`) writes `export/`:
+`matrix.json`, `golden_vectors.json`, `AnimalVisionConstants.kt.txt`, `animal_vision.glsl`.
+Both V2 (default) and V0 (fallback) are exported, so the app can switch matrix without a code
+change. `matrix.json` records the generating git commit and whether the sources were dirty.
+
+- **Layouts.** JSON and Python are row-major. GLSL `mat3(...)` arguments and
+  `glUniformMatrix3fv(..., false, ...)` are column-major. `ColorMatrix` is 4x5 row-major on
+  gamma-encoded values (MVP only). `tests/test_export.py` rebuilds the matrix from each snippet
+  with the convention of its platform and checks it equals the Python matrix.
+- **Golden vectors.** 73 sRGB colours (8 primaries/secondaries and black/white, 8 grays, 7 skin
+  tones, 10 other named colours, 40 seeded random) with the expected 8-bit output and unclipped
+  linear value for both variants. They cover the colour step only (decode, matrix, clamp, encode),
+  not blur or shadow lift. A float32 numpy re-implementation of the shader maths, fed only from
+  the exported GLSL constants, reproduces them within 1 per channel. The GLSL itself was **not
+  compiled or run** here; that is the Android phase's job.
+- **Acuity recipe** is exported as parameters (`k`, `acuity_ratio`, `hfov_deg`, exaggeration
+  default 1.0 and maximum 8.0) plus a Kotlin `acuitySigmaPx()`, with `enabled_by_default: false`.
+  Decision (from the user): the on-state default stays at the physical 1.0 even though that is only
+  0.4-0.7 px at preview sizes; the app can expose exaggeration as a slider.
+- **Staleness guard.** `test_committed_export_is_not_stale` fails if the matrices or recipes change
+  and the export was not regenerated. Commit the code first, then regenerate, so the recorded
+  commit is the one that produced the numbers.

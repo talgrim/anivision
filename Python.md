@@ -187,8 +187,8 @@ Then update `Android.md` Phases 3-4 to point at these files.
 - [ ] Red/green/orange/brown patches are clearly collapsed, blue vs yellow stay distinct, grays stay neutral
 - [ ] The spectral strip shows blue, then gray near 480 nm, then yellow
 - [ ] V0 vs V2 comparison is documented, with a chosen default
-- [ ] `export/` contains the matrix, snippets and golden vectors
-- [ ] `README` states the "approximation" caveat and cites the sources
+- [x] `export/` contains the matrix, snippets and golden vectors
+- [x] `README` states the "approximation" caveat and cites the sources
 
 ## 8. Risks and assumptions
 

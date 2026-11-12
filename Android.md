@@ -125,10 +125,10 @@ Needed:
 6. Commit.
 
 ### Phase 3: Quick MVP filter
-1. Create `vision/AnimalVision.kt`: a data class holding the 3x3 matrix (and later blur radius, brightness) plus a `DOG` profile using the deuteranopia starting matrix.
+1. Create `vision/AnimalVision.kt`: a data class holding the 3x3 matrix (and later blur radius, brightness) plus a `DOG` profile. Take the matrix from the prototype export, not from memory: `DOG_V2_COLOR_MATRIX_4X5` (default) or `DOG_V0_COLOR_MATRIX_4X5` (fallback) in `src/prototype/export/AnimalVisionConstants.kt.txt`. Keep the matrix as data so the default can change without a code change (`export/matrix.json` holds both, plus the generating commit).
 2. Set `PreviewView` to `ImplementationMode.COMPATIBLE` (TextureView) and apply a `ColorMatrixColorFilter` via the view's layer paint (`setLayerType(LAYER_TYPE_HARDWARE, paint)`).
 3. Add a toggle: normal vs. dog view.
-4. Verify on-device against the Python prototype output. Color will be slightly off, since the matrix runs on gamma-encoded values. This is acceptable for the MVP.
+4. Verify on-device against the Python prototype output (`python -m anivision in.jpg out.png --variant v2`). Color will be slightly off, since `ColorMatrix` runs on gamma-encoded values. This is acceptable for the MVP.
 5. Commit.
 
 ### Phase 4: Proper GPU pipeline
@@ -139,9 +139,10 @@ Needed:
    - multiply by the profile matrix (uniform `mat3`)
    - optional separable blur (acuity) and brightness lift
    - re-encode to sRGB
-3. Pass the `AnimalVision` profile as uniforms.
-4. Verify correct orientation, aspect ratio and no frame drops (target 30 fps).
-5. Commit.
+3. Pass the `AnimalVision` profile as uniforms. Use `export/animal_vision.glsl` (`mat3` arguments are **column-major**; `DOG_V2_COLUMN_MAJOR` in the Kotlin snippet is the same data for `glUniformMatrix3fv(..., false, ...)`). Gamut policy: clamp each channel to [0, 1].
+4. Blur (acuity), switch **hidden by default**: compute sigma from the real frame with `acuitySigmaPx(longEdgePx, exaggeration)` (formula and constants in `export/matrix.json` under `acuity`; default exaggeration 1.0, maximum 8.0). Blur in linear light, mirrored edges. Shadow lift (`shadow_lift` in the same file) is optional and off by default.
+5. Verify the colour step against `export/golden_vectors.json` (73 sRGB colours, tolerance of 1 per 8-bit channel for 32-bit float math; this is unverified on a device, so check it on the target GPU). Then verify correct orientation, aspect ratio and no frame drops (target 30 fps).
+6. Commit.
 
 ### Phase 5: Features
 - Side-by-side or draggable split-screen "normal | dog" comparison.
