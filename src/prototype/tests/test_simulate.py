@@ -121,6 +121,19 @@ def test_cli_defaults_to_the_shipped_variant():
     np.testing.assert_array_equal(get_variant(args.variant), DOG_V2)
 
 
+def test_cli_cat_variant_uses_the_cat_acuity_by_default(tmp_path, capsys):
+    src, dst = tmp_path / "in.png", tmp_path / "out.png"
+    Image.fromarray(np.random.default_rng(2).integers(0, 256, (40, 60, 3), dtype=np.uint8)).save(src)
+
+    def blur_sigma(*extra):
+        assert cli.main([str(src), str(dst), "--acuity", *extra]) == 0
+        return float(capsys.readouterr().err.split("blur sigma ")[1].split(" px")[0])
+
+    cat = blur_sigma("--variant", "cat")
+    assert cat == pytest.approx(blur_sigma("--variant", "v2", "--acuity-ratio", "3.5"), abs=0.01)
+    assert cat < blur_sigma("--variant", "v2")  # the cat resolves slightly finer detail than the dog
+
+
 def test_cli_acuity_gamut_and_lift_flags(tmp_path, capsys):
     src, dst = tmp_path / "in.png", tmp_path / "out.png"
     Image.fromarray(np.random.default_rng(0).integers(0, 256, (40, 60, 3), dtype=np.uint8)).save(src)

@@ -2,8 +2,8 @@ import numpy as np
 import pytest
 
 from anivision import derive as dv
-from anivision.profiles import DOG
-from anivision.variants import DOG_V2, get_variant
+from anivision.profiles import CAT, DOG
+from anivision.variants import CAT_V2, DOG_V2, acuity_ratio_for, get_variant
 
 W = np.ones(3)
 
@@ -95,8 +95,31 @@ def test_v2_is_registered_as_a_variant():
 
 
 def test_shared_variant_matrices_are_read_only():
-    for name in ("v0", "v2"):
+    for name in ("v0", "v2", "cat"):
         matrix = get_variant(name)
         assert not matrix.flags.writeable
         with pytest.raises(ValueError):
             matrix[0, 0] = 0.0
+
+
+@pytest.mark.parametrize("profile", [DOG, CAT])
+def test_each_profile_derives_a_valid_projection(profile):
+    t = dv.derive(profile)
+    np.testing.assert_allclose(t.matrix @ dv.WHITE, dv.WHITE, atol=1e-9)  # grays stay gray
+    np.testing.assert_allclose(t.matrix @ t.matrix, t.matrix, atol=1e-9)  # projection
+    assert np.linalg.matrix_rank(t.matrix, tol=1e-9) == 2
+    assert profile.s_peak_nm < t.neutral_point_nm < profile.l_peak_nm
+
+
+def test_cat_is_registered_as_a_variant():
+    assert get_variant("cat") is CAT_V2
+    np.testing.assert_allclose(CAT_V2, dv.derive(CAT).matrix)
+    assert not np.allclose(CAT_V2, DOG_V2, atol=1e-4)  # different cones, different matrix
+
+
+def test_cat_neutral_point_is_longer_than_the_dogs():
+    assert dv.derive(CAT).neutral_point_nm > dv.derive(DOG).neutral_point_nm
+
+
+def test_acuity_ratio_follows_the_animal():
+    assert [acuity_ratio_for(v) for v in ("v0", "v1", "v2", "V2", "cat")] == [3.75, 3.75, 3.75, 3.75, 3.5]
