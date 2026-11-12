@@ -147,6 +147,65 @@ class GpuGoldenVectorTest {
         assertTrue("black next to the edge was blurred: ${normalSide[1].toList()}", maxDiff(normalSide[1], black) <= 1)
     }
 
+    /** The night-boost shadow lift, in front of the matrix, against the prototype's lifted vectors. */
+    @Test
+    fun shadowLiftMatchesGoldenVectors() {
+        checkShadowLift(blur = null)
+    }
+
+    /** Flat colours are unchanged by the blur, so the lift must also be right in the two-pass path. */
+    @Test
+    fun shadowLiftIsAppliedAfterTheBlur() {
+        checkShadowLift(blur = 3.0f)
+    }
+
+    /** Left of the divider stays the camera colour even with the lift on; right of it is lifted. */
+    @Test
+    fun shadowLiftOnlyTouchesTheFilteredSide() {
+        val tolerance = tolerance()
+        val lift = shadowLiftVectors().last()
+        val vectors = vectors()
+        val failures = mutableListOf<String>()
+        vectors.forEachIndexed { i, vector ->
+            val src = vector.rgb("srgb")
+            val settings = VisionSettings(AnimalVision.DOG_V2, split = 0.5f, shadowGamma = lift.gamma)
+            val (left, right) = renderRow(settings, listOf(SIZE / 4, SIZE * 3 / 4)) { camera.show(src) }
+            if (maxDiff(left, src) > 1) failures += "${vector.label} left: expected ${src.toList()}, got ${left.toList()}"
+            if (maxDiff(right, lift.srgb[i]) > tolerance) {
+                failures += "${vector.label} right: expected ${lift.srgb[i].toList()}, got ${right.toList()}"
+            }
+        }
+        assertTrue("lift split wrong:\n" + failures.joinToString("\n"), failures.isEmpty())
+    }
+
+    @Test
+    fun shadowLiftIsIgnoredWithoutAProfile() {
+        val failures = mutableListOf<String>()
+        for (vector in vectors()) {
+            val src = vector.rgb("srgb")
+            val actual = render(src, VisionSettings(shadowGamma = 0.7f))
+            if (maxDiff(actual, src) > 1) failures += "${vector.label}: expected ${src.toList()}, got ${actual.toList()}"
+        }
+        assertTrue("normal view was lifted:\n" + failures.joinToString("\n"), failures.isEmpty())
+    }
+
+    private fun checkShadowLift(blur: Float?) {
+        val tolerance = tolerance()
+        val vectors = vectors()
+        val failures = mutableListOf<String>()
+        for (lift in shadowLiftVectors()) {
+            val settings = VisionSettings(AnimalVision.DOG_V2, blur, shadowGamma = lift.gamma)
+            vectors.forEachIndexed { i, vector ->
+                val actual = render(vector.rgb("srgb"), settings)
+                val diff = maxDiff(actual, lift.srgb[i])
+                if (diff > tolerance) {
+                    failures += "${vector.label} gamma ${lift.gamma}: expected ${lift.srgb[i].toList()}, got ${actual.toList()} (off by $diff)"
+                }
+            }
+        }
+        assertTrue("shadow lift blur=$blur:\n" + failures.joinToString("\n"), failures.isEmpty())
+    }
+
     private fun checkAllVectors(variant: Variant, blur: Float?) {
         val tolerance = tolerance()
         val settings = VisionSettings(variant.profile, blur)
@@ -206,6 +265,20 @@ class GpuGoldenVectorTest {
     private val golden: JSONObject by lazy {
         val assets = InstrumentationRegistry.getInstrumentation().context.assets
         JSONObject(assets.open("golden_vectors.json").bufferedReader().use { it.readText() })
+    }
+
+    private class Lift(val gamma: Float, val srgb: List<IntArray>)
+
+    /** Lifted expectations (variant v2, see `shadow_lift_vectors`), index-aligned with [vectors]. */
+    private fun shadowLiftVectors(): List<Lift> {
+        val section = golden.getJSONObject("shadow_lift_vectors")
+        assertEquals("v2", section.getString("variant"))
+        val gammas = section.getJSONArray("gammas")
+        return List(gammas.length()) { g ->
+            val entry = gammas.getJSONObject(g)
+            val rows = entry.getJSONArray("srgb")
+            Lift(entry.getDouble("gamma").toFloat(), List(rows.length()) { r -> IntArray(3) { rows.getJSONArray(r).getInt(it) } })
+        }
     }
 
     private fun tolerance() = golden.getJSONObject("tolerance_8bit").getInt("recommended")

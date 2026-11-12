@@ -15,6 +15,39 @@ class VisionShadersTest {
     }
 
     @Test
+    fun shadowLiftIsVerbatimFromTheExportedGlsl() {
+        assertTrue(
+            "VisionShaders.SHADOW_LIFT_FUNCTIONS drifted from export/animal_vision.glsl",
+            ExportFiles.glsl.contains(VisionShaders.SHADOW_LIFT_FUNCTIONS),
+        )
+    }
+
+    @Test
+    fun everyVariantEmbedsTheShadowLiftAndDeclaresItsUniform() {
+        for (variant in VisionShaders.Variant.entries) {
+            val source = VisionShaders.fragment(variant)
+            assertTrue(variant.name, source.contains(VisionShaders.SHADOW_LIFT_FUNCTIONS))
+            assertTrue(variant.name, source.contains("uniform float uShadowGamma;"))
+        }
+    }
+
+    @Test
+    fun theLiftRunsOnlyInTheFinalPassAfterTheBlurAndBeforeTheMatrix() {
+        val call = "shadowLift(linear, uShadowGamma)"
+        for (variant in VisionShaders.Variant.entries) {
+            // The `#ifdef` branches are all present in the source text; the preprocessor picks one.
+            val source = VisionShaders.fragment(variant)
+            val main = source.substring(source.indexOf("void main()"))
+            val colourOut = main.substring(main.indexOf("#ifdef COLOUR_OUT"), main.indexOf("#else", main.indexOf("#ifdef COLOUR_OUT")))
+            assertTrue(variant.name, colourOut.contains(call))
+            assertTrue(variant.name, main.indexOf(call) == main.lastIndexOf(call))
+            // The blur comes first, then the lift, and the matrix takes the lifted colour.
+            assertTrue(variant.name, main.indexOf("blurred(vUv)") < main.indexOf(call))
+            assertTrue(variant.name, colourOut.contains("uColorMatrix * $call"))
+        }
+    }
+
+    @Test
     fun everyVariantEmbedsTheColourFunctions() {
         for (variant in VisionShaders.Variant.entries) {
             assertTrue(variant.name, VisionShaders.fragment(variant).contains(VisionShaders.COLOUR_FUNCTIONS))
@@ -64,7 +97,7 @@ class VisionShadersTest {
             assertTrue(variant.name, VisionShaders.fragment(variant).contains("if (vUv.x < uSplit) return fetchLinear(uv);"))
         }
         for (variant in VisionShaders.Variant.entries.filter { it.colourOut }) {
-            assertTrue(variant.name, VisionShaders.fragment(variant).contains("vUv.x < uSplit ? linear : uColorMatrix * linear"))
+            assertTrue(variant.name, VisionShaders.fragment(variant).contains("vUv.x < uSplit ? linear : uColorMatrix * shadowLift(linear, uShadowGamma)"))
         }
     }
 

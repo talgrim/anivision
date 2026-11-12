@@ -95,6 +95,8 @@ Properties:
 
 A mild shadow lift, e.g. a gamma on luminance. Mark as artistic, not physiological.
 
+Design, limits and the Android port are in `LowLight.md`.
+
 ### Out of scope for v1
 
 UV sensitivity (dog lenses block most UV), flicker fusion/motion, field of view and eye placement, and rod-dominated vision.

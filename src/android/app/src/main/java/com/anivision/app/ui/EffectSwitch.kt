@@ -10,13 +10,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.anivision.app.R
 
-/** Show/hide switch for the acuity blur, drawn over the camera preview. Off by default. */
+/** Labelled show/hide switch for an optional effect (blur, night boost), drawn over the camera preview. */
 @Composable
-fun BlurSwitch(
+fun EffectSwitch(
+    label: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -27,10 +26,10 @@ fun BlurSwitch(
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
     ) {
         Row(
-            modifier = Modifier.padding(start = 20.dp, end = 12.dp, top = 4.dp, bottom = 4.dp),
+            modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(stringResource(R.string.blur_label), modifier = Modifier.padding(end = 12.dp))
+            Text(label, modifier = Modifier.padding(end = 8.dp))
             Switch(checked = checked, onCheckedChange = onCheckedChange)
         }
     }

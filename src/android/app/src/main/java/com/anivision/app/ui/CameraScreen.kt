@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.anivision.app.R
 import com.anivision.app.camera.CameraPreview
@@ -39,6 +40,7 @@ import com.anivision.app.photo.PhotoFilterer
 import com.anivision.app.photo.PhotoStore
 import com.anivision.app.photo.sharePhoto
 import com.anivision.app.vision.AnimalVision
+import com.anivision.app.vision.NightBoost
 import com.anivision.app.vision.VisionSettings
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
@@ -58,6 +60,8 @@ fun CameraScreen() {
     var splitFraction by rememberSaveable { mutableFloatStateOf(SPLIT_DEFAULT) }
     var blur by rememberSaveable { mutableStateOf(false) }
     var blurStrength by rememberSaveable { mutableFloatStateOf(BLUR_STRENGTH_DEFAULT) }
+    var nightBoost by rememberSaveable { mutableStateOf(false) }
+    var nightStrength by rememberSaveable { mutableFloatStateOf(NightBoost.DEFAULT_STRENGTH) }
     var saving by remember { mutableStateOf(false) }
 
     val imageCapture = remember { ImageCapture.Builder().build() }
@@ -68,6 +72,7 @@ fun CameraScreen() {
         profile = if (mode == ViewMode.NORMAL) null else AnimalVision.DOG,
         blurExaggeration = if (blur) blurStrength else null,
         split = if (mode == ViewMode.SPLIT) splitFraction else 0f,
+        shadowGamma = if (nightBoost) NightBoost.gammaFor(nightStrength) else null,
     )
 
     fun takePhoto() {
@@ -184,8 +189,16 @@ fun CameraScreen() {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (mode != ViewMode.NORMAL) {
-                BlurSwitch(checked = blur, onCheckedChange = { blur = it })
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    EffectSwitch(stringResource(R.string.blur_label), checked = blur, onCheckedChange = { blur = it })
+                    EffectSwitch(
+                        stringResource(R.string.night_boost_label),
+                        checked = nightBoost,
+                        onCheckedChange = { nightBoost = it },
+                    )
+                }
                 if (blur) BlurSlider(strength = blurStrength, onStrengthChange = { blurStrength = it })
+                if (nightBoost) NightBoostSlider(strength = nightStrength, onStrengthChange = { nightStrength = it })
             }
             VisionModeToggle(mode = mode, onModeChange = { mode = it })
             Row(
