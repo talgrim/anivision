@@ -139,14 +139,31 @@ def _without_generator(doc: dict) -> dict:
     return {k: v for k, v in doc.items() if k != "generator"}
 
 
+def _assert_same(actual, expected, path="doc"):
+    """Structural equality where floats only need to agree to 1e-9 (numpy builds differ in the last digits)."""
+    if isinstance(expected, dict):
+        assert isinstance(actual, dict) and actual.keys() == expected.keys(), path
+        for key in expected:
+            _assert_same(actual[key], expected[key], f"{path}.{key}")
+    elif isinstance(expected, list):
+        assert isinstance(actual, list) and len(actual) == len(expected), path
+        for i, (a, e) in enumerate(zip(actual, expected)):
+            _assert_same(a, e, f"{path}[{i}]")
+    elif isinstance(expected, float):
+        assert actual == pytest.approx(expected, rel=1e-9, abs=1e-9), path
+    else:
+        assert actual == expected, path
+
+
 @pytest.mark.skipif(not (EXPORT_DIR / "matrix.json").exists(), reason="export/ not generated")
 def test_committed_export_is_not_stale():
     """Fails when the matrices or recipes changed but scripts/export_constants.py was not re-run."""
     for fname, doc in (("matrix.json", matrix_document(GEN)), ("golden_vectors.json", golden_document(GEN))):
         on_disk = json.loads((EXPORT_DIR / fname).read_text(encoding="utf-8"))
-        assert _without_generator(on_disk) == _without_generator(json.loads(json.dumps(doc))), (
-            f"export/{fname} is stale: run scripts/export_constants.py"
-        )
+        try:
+            _assert_same(_without_generator(on_disk), _without_generator(json.loads(json.dumps(doc))))
+        except AssertionError as exc:
+            raise AssertionError(f"export/{fname} is stale (run scripts/export_constants.py): {exc}") from exc
     for fname, text in (("AnimalVisionConstants.kt.txt", kotlin_snippet(GEN)), ("animal_vision.glsl", glsl_snippet(GEN))):
         on_disk = (EXPORT_DIR / fname).read_text(encoding="utf-8")
         strip = lambda t: "\n".join(t.splitlines()[1:])  # noqa: E731  (first line names the commit)

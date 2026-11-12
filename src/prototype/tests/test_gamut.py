@@ -91,6 +91,19 @@ def test_lift_preserves_colour_ratios_and_only_brightens():
     np.testing.assert_allclose(out / out[:, [1]], rgb / rgb[:, [1]], rtol=1e-9)  # same hue and saturation
 
 
+def test_lift_never_pushes_a_channel_past_one():
+    # Pure blue has luminance 0.0722; the plain Y^(gamma-1) scale would take it to 1.48 (gamma 0.85).
+    saturated = np.array([[0.0, 0.0, 1.0], [0.0, 0.0, 0.4], [0.02, 0.0, 0.9], [0.0, 0.3, 0.0]])
+    for g in (SUGGESTED_GAMMA, STRONGEST_GAMMA, 0.3):
+        out = lift_shadows(saturated, g)
+        assert out.max() <= 1.0 + 1e-12
+        assert np.all(out >= saturated)
+        np.testing.assert_allclose(out[0], saturated[0])  # already at 1: nothing left to lift
+    # Hue is unchanged for the capped pixels too (colour ratios kept).
+    out = lift_shadows(saturated, STRONGEST_GAMMA)
+    np.testing.assert_allclose(out[2, 0] / out[2, 2], saturated[2, 0] / saturated[2, 2])
+
+
 def test_simulate_shadow_lift_brightens_dark_pixels():
     dark = np.full((3, 3, 3), 20, dtype=np.uint8)
     plain = simulate(dark, np.eye(3)).image

@@ -113,6 +113,14 @@ def test_cli_end_to_end(tmp_path):
         assert im.mode == "RGB"
 
 
+def test_cli_defaults_to_the_shipped_variant():
+    from anivision.variants import DOG_V2
+
+    args = cli.build_parser().parse_args(["in.png", "out.png"])
+    assert args.variant == "v2"
+    np.testing.assert_array_equal(get_variant(args.variant), DOG_V2)
+
+
 def test_cli_acuity_gamut_and_lift_flags(tmp_path, capsys):
     src, dst = tmp_path / "in.png", tmp_path / "out.png"
     Image.fromarray(np.random.default_rng(0).integers(0, 256, (40, 60, 3), dtype=np.uint8)).save(src)
