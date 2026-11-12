@@ -13,5 +13,8 @@
     <string name="camera_blocked_message">Android will not ask again. Open the app settings, choose Permissions, then allow Camera.</string>
     <string name="camera_blocked_open_settings">Open app settings</string>
 
+    <string name="mode_normal">Normal</string>
+    <string name="mode_dog">Dog</string>
+
     <string name="camera_unavailable">The camera could not be started.</string>
 </resources>

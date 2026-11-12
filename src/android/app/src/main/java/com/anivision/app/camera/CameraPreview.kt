@@ -18,22 +18,31 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.anivision.app.R
 import com.anivision.app.ui.MessageScreen
+import com.anivision.app.vision.VisionProfile
+import com.anivision.app.vision.applyVisionProfile
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.awaitCancellation
 
 /**
- * Live, unfiltered camera preview bound to the current lifecycle. The camera is released when
- * the composable leaves the composition; CameraX handles stop/start with the lifecycle itself.
+ * Live camera preview bound to the current lifecycle, optionally seen through [profile] (null
+ * shows the unfiltered image). The camera is released when the composable leaves the composition;
+ * CameraX handles stop/start with the lifecycle itself.
+ *
+ * The preview uses [PreviewView.ImplementationMode.COMPATIBLE] (a TextureView) because a colour
+ * filter can only be applied to a hardware layer, not to the default SurfaceView.
  * The caller must hold the CAMERA permission (see [CameraPermissionGate]).
  */
 @Composable
 fun CameraPreview(
     modifier: Modifier = Modifier,
+    profile: VisionProfile? = null,
     lensFacing: Int = CameraSelector.LENS_FACING_BACK,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val previewView = remember { PreviewView(context) }
+    val previewView = remember {
+        PreviewView(context).apply { implementationMode = PreviewView.ImplementationMode.COMPATIBLE }
+    }
     var failed by remember { mutableStateOf(false) }
 
     LaunchedEffect(previewView, lifecycleOwner, lensFacing) {
@@ -60,6 +69,10 @@ fun CameraPreview(
     if (failed) {
         MessageScreen(title = stringResource(R.string.app_name), message = stringResource(R.string.camera_unavailable))
     } else {
-        AndroidView(factory = { previewView }, modifier = modifier)
+        AndroidView(
+            factory = { previewView },
+            modifier = modifier,
+            update = { it.applyVisionProfile(profile) },
+        )
     }
 }
