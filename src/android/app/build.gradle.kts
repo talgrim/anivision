@@ -31,8 +31,13 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    sourceSets {
+        // The prototype's exported golden vectors, read by the on-device pipeline test.
+        getByName("androidTest").assets.directories.add("../../prototype/export")
+    }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
