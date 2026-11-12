@@ -21,8 +21,15 @@ DEUTERANOPIA_VIENOT_1999 = np.array(
     ]
 )
 
+from .derive import derive  # noqa: E402  (after V0 so the module reads top-down)
+
+# V2: dog-specific derivation from cone sensitivities (475 nm anchor, default
+# Gaussian primaries). See derive.py.
+DOG_V2 = derive().matrix
+
 VARIANTS: dict[str, np.ndarray] = {
     "v0": DEUTERANOPIA_VIENOT_1999,
+    "v2": DOG_V2,
 }
 
 
