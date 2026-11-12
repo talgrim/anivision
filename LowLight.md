@@ -10,6 +10,11 @@ It is the shadow lift already prototyped in `src/prototype/anivision/lowlight.py
 
 It is **artistic, not physiological**, and the app must not describe it as what a dog sees.
 
+**Cat:** the cat view carries the suggested lift (gamma 0.85) *always*, as an artistic stand-in for
+cats' better dim-light vision (tapetum lucidum, which is not modelled). The user's strength
+slider does not stack with it: the effective gamma is the smaller of the two. The dog view has no
+built-in lift, so "off" still means off there.
+
 ## Why it is only a shadow lift
 
 What is known about the dog eye, stated at the level I am confident of:

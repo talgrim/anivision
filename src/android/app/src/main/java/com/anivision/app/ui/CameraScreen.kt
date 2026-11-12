@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -40,13 +41,16 @@ import com.anivision.app.camera.CameraPreview
 import com.anivision.app.photo.PhotoCapturer
 import com.anivision.app.photo.PhotoFilterer
 import com.anivision.app.photo.PhotoStore
+import com.anivision.app.photo.SplitCaptions
 import com.anivision.app.photo.sharePhoto
-import com.anivision.app.vision.AnimalVision
 import com.anivision.app.vision.NightBoost
-import com.anivision.app.vision.VisionSettings
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+/** How long the gallery photo waits after a setting changes before it is rendered again. */
+private const val IMPORT_RENDER_DEBOUNCE_MS = 250L
 
 /** Roughly the gallery button's width, mirrored on the shutter's other side. */
 private val GALLERY_BUTTON_BALANCE = 48.dp
@@ -58,7 +62,12 @@ fun CameraScreen() {
     val view = LocalView.current
     val scope = rememberCoroutineScope()
 
-    var mode by rememberSaveable { mutableStateOf(ViewMode.DOG) }
+    // What the left and right buttons show. Kept between launches; the view mode is not.
+    val perspectivePreferences = remember { PerspectivePreferences(context.applicationContext) }
+    var pair by rememberSaveable(stateSaver = PerspectivePair.PairSaver) { mutableStateOf(perspectivePreferences.load()) }
+    LaunchedEffect(pair) { perspectivePreferences.save(pair) }
+    var showSettings by rememberSaveable { mutableStateOf(false) }
+    var mode by rememberSaveable { mutableStateOf(ViewMode.RIGHT) }
     var splitFraction by rememberSaveable { mutableFloatStateOf(SPLIT_DEFAULT) }
     var blur by rememberSaveable { mutableStateOf(false) }
     var blurStrength by rememberSaveable { mutableFloatStateOf(BLUR_STRENGTH_DEFAULT) }
@@ -71,18 +80,38 @@ fun CameraScreen() {
     val capturer = remember(imageCapture) { PhotoCapturer(context.applicationContext, imageCapture) }
     // A function rather than a value: the preview calls it for every frame, so dragging the divider
     // changes what is drawn without recomposing this screen.
-    fun currentSettings() = VisionSettings(
-        profile = if (mode == ViewMode.NORMAL) null else AnimalVision.DOG,
+    fun currentSettings() = buildVisionSettings(
+        mode = mode,
+        pair = pair,
+        splitFraction = splitFraction,
         blurExaggeration = if (blur) blurStrength else null,
-        split = if (mode == ViewMode.SPLIT) splitFraction else 0f,
         shadowGamma = if (nightBoost) NightBoost.gammaFor(nightStrength) else null,
     )
+
+    // The blur and night-boost controls, on the camera and on the gallery photo alike.
+    val effectControls: @Composable () -> Unit = {
+        EffectControls(
+            blur = blur,
+            onBlurChange = { blur = it },
+            blurStrength = blurStrength,
+            onBlurStrengthChange = { blurStrength = it },
+            nightBoost = nightBoost,
+            onNightBoostChange = { nightBoost = it },
+            nightStrength = nightStrength,
+            onNightStrengthChange = { nightStrength = it },
+        )
+    }
 
     fun takePhoto() {
         saving = true
         scope.launch {
             val message = try {
-                capturer.capture(currentSettings(), view.display?.rotation ?: Surface.ROTATION_0)
+                capturer.capture(
+                    currentSettings(),
+                    view.display?.rotation ?: Surface.ROTATION_0,
+                    leftLabel = context.getString(pair.left.label),
+                    rightLabel = context.getString(pair.right.label),
+                )
                 R.string.photo_saved
             } catch (e: CancellationException) {
                 throw e
@@ -94,9 +123,12 @@ fun CameraScreen() {
         }
     }
 
-    // Gallery import: the picked image is filtered with the dog profile and shown before it is saved.
+    // Gallery import: the picked image is filtered like the live view (same pair, mode, blur and
+    // night boost) and shown before it is saved. It is rendered again when any of them changes.
     val filterer = remember { PhotoFilterer() }
+    val importCaptions = remember { SplitCaptions() }
     val store = remember { PhotoStore(context.contentResolver) }
+    var importSource by remember { mutableStateOf<Uri?>(null) }
     var imported by remember { mutableStateOf<Bitmap?>(null) }
     var importedUri by remember { mutableStateOf<Uri?>(null) }
     var importBusy by remember { mutableStateOf(false) }
@@ -105,21 +137,27 @@ fun CameraScreen() {
     val shown = imported
     DisposableEffect(shown) { onDispose { shown?.recycle() } }
 
-    fun importImage(uri: Uri) {
+    val importSettings = currentSettings()
+    LaunchedEffect(importSource, importSettings) {
+        val uri = importSource ?: return@LaunchedEffect
         importBusy = true
-        scope.launch {
-            try {
-                val importSettings = currentSettings().copy(profile = AnimalVision.DOG, split = 0f)
-                val open = { context.contentResolver.openInputStream(uri) ?: throw IOException("Cannot open $uri") }
-                imported = filterer.render(open, importSettings)
-                importedUri = null
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Toast.makeText(context, R.string.import_failed, Toast.LENGTH_SHORT).show()
-            } finally {
-                importBusy = false
-            }
+        try {
+            // A slider drag changes the settings many times a second; wait for the changes to stop
+            // before rendering (the first render after picking a photo goes straight away).
+            if (imported != null) delay(IMPORT_RENDER_DEBOUNCE_MS)
+            val open = { context.contentResolver.openInputStream(uri) ?: throw IOException("Cannot open $uri") }
+            val rendered = filterer.render(open, importSettings)
+            importCaptions.draw(rendered, importSettings.split, context.getString(pair.left.label), context.getString(pair.right.label))
+            imported = rendered
+            importedUri = null
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            importSource = null
+            imported = null
+            Toast.makeText(context, R.string.import_failed, Toast.LENGTH_SHORT).show()
+        } finally {
+            importBusy = false
         }
     }
 
@@ -140,16 +178,31 @@ fun CameraScreen() {
     }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) importImage(uri)
+        if (uri != null) importSource = uri
+    }
+
+    // Shown over whichever screen is open: the camera, or the gallery photo.
+    if (showSettings) {
+        PerspectiveSettingsDialog(pair = pair, onPairChange = { pair = it }, onDismiss = { showSettings = false })
     }
 
     val photo = shown
     if (photo != null) {
         ImportedPhotoScreen(
             photo = photo,
+            pair = pair,
+            mode = mode,
+            onModeChange = { mode = it },
+            splitFraction = splitFraction,
+            onSplitChange = { splitFraction = it },
+            effectControls = effectControls,
+            onOpenSettings = { showSettings = true },
             saved = importedUri != null,
             busy = importBusy,
-            onClose = { imported = null },
+            onClose = {
+                importSource = null
+                imported = null
+            },
             onSave = {
                 importBusy = true
                 scope.launch {
@@ -178,6 +231,7 @@ fun CameraScreen() {
             modifier = Modifier.fillMaxSize(),
             settings = { currentSettings() },
             imageCapture = imageCapture,
+            wideAngle = mode.wantsWideAngle(pair),
         )
         // Before the controls in the Box, so the controls stay on top of the divider's touch strip.
         if (mode == ViewMode.SPLIT) {
@@ -187,13 +241,16 @@ fun CameraScreen() {
                 modifier = Modifier.fillMaxSize(),
             )
         }
-        AboutButton(
-            onClick = { showAbout = true },
+        Row(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .statusBarsPadding()
                 .padding(top = 8.dp, end = 16.dp),
-        )
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            AboutButton(onClick = { showAbout = true })
+            SettingsButton(onClick = { showSettings = true })
+        }
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -203,25 +260,8 @@ fun CameraScreen() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (mode != ViewMode.NORMAL) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    EffectToggle(
-                        icon = R.drawable.ic_blur,
-                        contentDescription = stringResource(R.string.blur_label),
-                        checked = blur,
-                        onCheckedChange = { blur = it },
-                    )
-                    EffectToggle(
-                        icon = R.drawable.ic_night,
-                        contentDescription = stringResource(R.string.night_boost_label),
-                        checked = nightBoost,
-                        onCheckedChange = { nightBoost = it },
-                    )
-                }
-                if (blur) BlurSlider(strength = blurStrength, onStrengthChange = { blurStrength = it })
-                if (nightBoost) NightBoostSlider(strength = nightStrength, onStrengthChange = { nightStrength = it })
-            }
-            VisionModeToggle(mode = mode, onModeChange = { mode = it })
+            if (mode.showsFilter(pair)) effectControls()
+            VisionModeToggle(pair = pair, mode = mode, onModeChange = { mode = it })
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,

@@ -10,10 +10,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import com.anivision.app.R
 
-/** Normal / split / dog switch shown over the camera preview. */
+/** Left perspective / split / right perspective switch shown over the camera preview. */
 @Composable
 fun VisionModeToggle(
+    pair: PerspectivePair,
     mode: ViewMode,
     onModeChange: (ViewMode) -> Unit,
     modifier: Modifier = Modifier,
@@ -26,11 +28,16 @@ fun VisionModeToggle(
     ) {
         SingleChoiceSegmentedButtonRow {
             ViewMode.entries.forEachIndexed { index, entry ->
+                val label = when (entry) {
+                    ViewMode.LEFT -> pair.left.label
+                    ViewMode.SPLIT -> R.string.mode_split
+                    ViewMode.RIGHT -> pair.right.label
+                }
                 SegmentedButton(
                     selected = mode == entry,
                     onClick = { onModeChange(entry) },
                     shape = SegmentedButtonDefaults.itemShape(index = index, count = ViewMode.entries.size),
-                    label = { Text(stringResource(entry.label)) },
+                    label = { Text(stringResource(label)) },
                 )
             }
         }

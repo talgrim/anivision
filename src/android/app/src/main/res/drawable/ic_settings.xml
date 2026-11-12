@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cog (eight teeth, round hole). Tinted by the Icon composable. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#000000"
+        android:fillType="evenOdd"
+        android:pathData="M9.02,4.79 L10.11,4.43 L10.44,2.12 L13.56,2.12 L13.89,4.43 L14.98,4.79 L16.02,5.31 L17.88,3.91 L20.09,6.12 L18.69,7.98 L19.21,9.02 L19.57,10.11 L21.88,10.44 L21.88,13.56 L19.57,13.89 L19.21,14.98 L18.69,16.02 L20.09,17.88 L17.88,20.09 L16.02,18.69 L14.98,19.21 L13.89,19.57 L13.56,21.88 L10.44,21.88 L10.11,19.57 L9.02,19.21 L7.98,18.69 L6.12,20.09 L3.91,17.88 L5.31,16.02 L4.79,14.98 L4.43,13.89 L2.12,13.56 L2.12,10.44 L4.43,10.11 L4.79,9.02 L5.31,7.98 L3.91,6.12 L6.12,3.91 L7.98,5.31 Z M8.60,12.00 a3.4,3.4 0 1,0 6.80,0 a3.4,3.4 0 1,0 -6.80,0 Z" />
+</vector>

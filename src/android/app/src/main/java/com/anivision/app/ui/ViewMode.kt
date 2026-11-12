@@ -1,16 +1,13 @@
 package com.anivision.app.ui
 
-import androidx.annotation.StringRes
-import com.anivision.app.R
+/** What the camera preview shows, relative to the chosen [PerspectivePair]. */
+enum class ViewMode {
+    /** The pair's left perspective everywhere. */
+    LEFT,
 
-/** What the camera preview shows. */
-enum class ViewMode(@StringRes val label: Int) {
-    /** The camera image untouched. */
-    NORMAL(R.string.mode_normal),
+    /** The left perspective on the left of a draggable divider, the right one on its right. */
+    SPLIT,
 
-    /** Normal on the left of a draggable divider, dog vision on the right. */
-    SPLIT(R.string.mode_split),
-
-    /** Dog vision everywhere. */
-    DOG(R.string.mode_dog),
+    /** The pair's right perspective everywhere. */
+    RIGHT,
 }

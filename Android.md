@@ -2,7 +2,7 @@
 
 ## 1. Context
 
-**Goal:** An Android app that shows the live camera view as a dog would see it, i.e. with canine color vision. Photo/video capture and other animals (cat, etc.) come later.
+**Goal:** An Android app that shows the live camera view as a dog would see it, i.e. with canine color vision. Photo capture and a cat view are in; video comes later.
 
 **Why Android first:** Building for iOS needs a Mac and Xcode (the paid Apple Developer Program is only needed to distribute or to run on-device beyond 7 days). Android needs neither. A one-time $25 Google Play fee applies only at publishing time.
 
@@ -153,7 +153,7 @@ Needed:
 - Sliders for blur (acuity) and low-light boost. *(Done, PRs #8 and #10; night boost is the artistic shadow lift described in `LowLight.md`.)*
 - Photo capture with the effect baked in, saved via MediaStore. *(Done, PR #6; a plain `ImageCapture` is filtered offscreen rather than using an effect.)*
 - Video recording with the effect (`VideoCapture` plus effect). *(Out of v1 scope.)*
-- Additional profiles (cat, etc.) behind a selector. *(Out of v1 scope.)*
+- Additional profiles (cat) behind a selector. *(Done: Human / Dog / Cat; a cog button chooses what the left and right buttons of the Left | Split | Right toggle show, the gallery import has the same toggle, and the choice is remembered. The cat carries artistic extras: a built-in shadow lift, peripheral blur and, where the phone has an ultra-wide lens, the widest zoom. See `Python.md` and `LowLight.md`.)*
 - Gallery import: apply the filter to existing photos. *(Done, PR #7.)*
 
 ### Phase 6: Polish and release prep
@@ -188,4 +188,4 @@ The prototype validated the look on still photos before the shader work. Details
 2. **Working copy:** the current directory (Windows filesystem, also reachable from WSL).
 3. **Test device:** one physical phone on Android 11 (API 30).
 4. **Video recording:** out of v1 scope for now; photo capture comes in Phase 5.
-5. **Other animals:** dog only for now. Cat stays a later extension.
+5. **Other animals:** dog and cat. The cat's colour and blur are very similar to the dog's, so the cat adds artistic extras (built-in shadow lift, peripheral blur, wide-angle zoom); the About screen says so. Cat numbers are approximate and not verified against primary papers.

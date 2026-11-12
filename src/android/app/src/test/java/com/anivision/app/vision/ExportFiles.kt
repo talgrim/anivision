@@ -23,12 +23,21 @@ internal object ExportFiles {
     val matrix: JSONObject by lazy { read("matrix.json") }
     val goldenVectors: JSONObject by lazy { read("golden_vectors.json") }
 
-    /** 3x3 row-major values of a dog variant ("v2", "v0") from matrix.json. */
-    fun dogMatrix(variant: String): DoubleArray {
-        val rows = matrix.getJSONObject("profiles").getJSONObject("dog")
-            .getJSONObject("variants").getJSONObject(variant).getJSONArray("matrix")
+    private fun profile(animal: String): JSONObject = matrix.getJSONObject("profiles").getJSONObject(animal)
+
+    /** 3x3 row-major values of an animal's variant from matrix.json (`profiles.<animal>.variants.<variant>`). */
+    fun profileMatrix(animal: String, variant: String): DoubleArray {
+        val rows = profile(animal).getJSONObject("variants").getJSONObject(variant).getJSONArray("matrix")
         return DoubleArray(9) { rows.getJSONArray(it / 3).getDouble(it % 3) }
     }
+
+    /** 3x3 row-major values of a dog variant ("v2", "v0") from matrix.json. */
+    fun dogMatrix(variant: String): DoubleArray = profileMatrix("dog", variant)
+
+    /** A number from an animal's profile: `acuity_ratio`, `shadow_gamma` or `peripheral_blur`. */
+    fun profileValue(animal: String, name: String): Double = profile(animal).getDouble(name)
+
+    fun defaultVariant(animal: String): String = profile(animal).getString("default_variant")
 
     fun defaultDogVariant(): String =
         matrix.getJSONObject("profiles").getJSONObject("dog").getString("default_variant")

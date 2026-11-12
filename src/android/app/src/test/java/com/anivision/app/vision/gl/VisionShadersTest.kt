@@ -84,20 +84,39 @@ class VisionShadersTest {
     }
 
     @Test
-    fun everyVariantDeclaresTheSplitUniform() {
+    fun everyVariantDeclaresThePeripheryAndSizeUniforms() {
         for (variant in VisionShaders.Variant.entries) {
-            assertTrue(variant.name, VisionShaders.fragment(variant).contains("uniform float uSplit;"))
+            val source = VisionShaders.fragment(variant)
+            assertTrue(variant.name, source.contains("uniform float uPeriphery;"))
+            assertTrue(variant.name, source.contains("uniform vec2 uSize;"))
         }
     }
 
     @Test
-    fun theUnfilteredSideSkipsTheBlurAndTheColourMatrix() {
-        for (variant in VisionShaders.Variant.entries.filter { it.blur }) {
-            // Blurring the Normal side would smear the picture the user is comparing against.
-            assertTrue(variant.name, VisionShaders.fragment(variant).contains("if (vUv.x < uSplit) return fetchLinear(uv);"))
+    fun theShaderHasNoSplitLogicBecauseTheRendererDrawsEachSideSeparately() {
+        for (variant in VisionShaders.Variant.entries) {
+            assertFalse(variant.name, VisionShaders.fragment(variant).contains("uSplit"))
         }
+    }
+
+    @Test
+    fun theBlurSigmaGrowsWithTheSquaredRadiusFromTheFrameCentre() {
+        for (variant in VisionShaders.Variant.entries.filter { it.blur }) {
+            val source = VisionShaders.fragment(variant)
+            // matrix.json acuity.peripheral_blur: sigma(r) = sigma * (1 + periphery * r^2), r^2 = 1 in the corners.
+            assertTrue(variant.name, source.contains("float r2 = dot(fromCentre, fromCentre) / (0.25 * dot(uSize, uSize));"))
+            assertTrue(variant.name, source.contains("float sigma = uSigma * (1.0 + uPeriphery * r2);"))
+            assertTrue(variant.name, source.contains("float radius = min(ceil(3.0 * sigma), float(MAX_RADIUS));"))
+        }
+    }
+
+    @Test
+    fun everySideGoesThroughTheSameMatrixAndLift() {
         for (variant in VisionShaders.Variant.entries.filter { it.colourOut }) {
-            assertTrue(variant.name, VisionShaders.fragment(variant).contains("vUv.x < uSplit ? linear : uColorMatrix * shadowLift(linear, uShadowGamma)"))
+            assertTrue(
+                variant.name,
+                VisionShaders.fragment(variant).contains("vec3 shown = uColorMatrix * shadowLift(linear, uShadowGamma);"),
+            )
         }
     }
 

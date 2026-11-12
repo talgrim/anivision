@@ -78,7 +78,7 @@ class PhotoPipelineTest {
     fun filtererRendersAGalleryStreamUprightInDogColours() {
         // 200x100 stored with a 90 degree rotation is a 100x200 portrait photo once upright.
         val file = jpeg(width = 200, height = 100, exifOrientation = ExifInterface.ORIENTATION_ROTATE_90)
-        val settings = VisionSettings(profile = AnimalVision.DOG)
+        val settings = VisionSettings(right = AnimalVision.DOG)
         val result = runBlocking { PhotoFilterer().render({ file.inputStream() }, settings) }
         try {
             assertEquals(100 to 200, result.width to result.height)

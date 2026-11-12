@@ -19,7 +19,7 @@ class SplitCaptionsTest {
 
     @Test
     fun captionsTheTopOfEachHalf() {
-        SplitCaptions().draw(bitmap, 0.5f, "Normal", "Dog")
+        SplitCaptions().draw(bitmap, 0.5f, "Human", "Dog")
 
         assertTrue("left caption missing", changed(0 until WIDTH / 2, TOP_BAND) > 0)
         assertTrue("right caption missing", changed(WIDTH / 2 until WIDTH, TOP_BAND) > 0)
@@ -27,7 +27,7 @@ class SplitCaptionsTest {
 
     @Test
     fun leavesTheRestOfThePhotoAloneApartFromTheDividerLine() {
-        SplitCaptions().draw(bitmap, 0.5f, "Normal", "Dog")
+        SplitCaptions().draw(bitmap, 0.5f, "Human", "Dog")
 
         assertEquals(0, changed(0 until WIDTH / 2 - LINE_CLEARANCE, BOTTOM_BAND))
         assertEquals(0, changed(WIDTH / 2 + LINE_CLEARANCE until WIDTH, BOTTOM_BAND))
@@ -35,7 +35,7 @@ class SplitCaptionsTest {
 
     @Test
     fun drawsTheDividerLineTopToBottomAtTheSplit() {
-        SplitCaptions().draw(bitmap, 0.3f, "Normal", "Dog")
+        SplitCaptions().draw(bitmap, 0.3f, "Human", "Dog")
 
         val seam = (WIDTH * 0.3f).toInt()
         for (y in listOf(0, HEIGHT / 4, HEIGHT / 2, HEIGHT - 1)) {
@@ -47,7 +47,7 @@ class SplitCaptionsTest {
 
     @Test
     fun theCaptionsHugTheOuterEdgesAndNeverCrossTheDivider() {
-        SplitCaptions().draw(bitmap, 0.3f, "Normal", "Dog")
+        SplitCaptions().draw(bitmap, 0.3f, "Human", "Dog")
 
         val seam = (WIDTH * 0.3f).toInt()
         assertTrue("left caption missing", changed(0 until seam, TOP_BAND) > 0)
@@ -58,7 +58,7 @@ class SplitCaptionsTest {
 
     @Test
     fun aCaptionThatDoesNotFitItsHalfMovesNextToTheDividerInTheOtherHalf() {
-        SplitCaptions().draw(bitmap, 0.1f, "Normal", "Dog")
+        SplitCaptions().draw(bitmap, 0.1f, "Human", "Dog")
 
         // The 100 px left half is too narrow for its caption and stays clean ...
         assertEquals(
@@ -72,7 +72,7 @@ class SplitCaptionsTest {
         assertTrue("right caption missing", changed(WIDTH * 8 / 10 until WIDTH, TOP_BAND) > 0)
 
         bitmap.eraseColor(BACKGROUND)
-        SplitCaptions().draw(bitmap, 0.95f, "Normal", "Dog")
+        SplitCaptions().draw(bitmap, 0.95f, "Human", "Dog")
 
         assertEquals(
             "narrow right half should stay clean",
@@ -86,10 +86,10 @@ class SplitCaptionsTest {
 
     @Test
     fun doesNothingWithoutADivider() {
-        SplitCaptions().draw(bitmap, 0f, "Normal", "Dog")
+        SplitCaptions().draw(bitmap, 0f, "Human", "Dog")
         assertEquals(0, changed(0 until WIDTH, 0 until HEIGHT))
 
-        SplitCaptions().draw(bitmap, 1f, "Normal", "Dog")
+        SplitCaptions().draw(bitmap, 1f, "Human", "Dog")
         assertEquals(0, changed(0 until WIDTH, 0 until HEIGHT))
     }
 

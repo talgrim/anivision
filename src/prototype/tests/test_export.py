@@ -13,6 +13,8 @@ from anivision.gamut import LUMA
 from anivision.lowlight import STRONGEST_GAMMA, SUGGESTED_GAMMA
 from anivision.export import (
     DEFAULT_VARIANT,
+    EXPORT_CONSTANTS,
+    EXPORT_PROFILES,
     EXPORT_VARIANTS,
     glsl_snippet,
     golden_document,
@@ -49,7 +51,7 @@ def _glsl_matrix(snippet: str, name: str) -> np.ndarray:
 def test_kotlin_layouts(name):
     m = matrices()[name]
     kt = kotlin_snippet(GEN)
-    const = f"DOG_{name.upper()}"
+    const = EXPORT_CONSTANTS[name]
     np.testing.assert_allclose(_kotlin_array(kt, f"{const}_ROW_MAJOR").reshape(3, 3), m, rtol=1e-6, atol=1e-7)
     col = _kotlin_array(kt, f"{const}_COLUMN_MAJOR")
     np.testing.assert_allclose(col.reshape(3, 3).T, m, rtol=1e-6, atol=1e-7)
@@ -62,7 +64,7 @@ def test_kotlin_layouts(name):
 @pytest.mark.parametrize("name", EXPORT_VARIANTS)
 def test_glsl_matrix_is_column_major(name):
     np.testing.assert_allclose(
-        _glsl_matrix(glsl_snippet(GEN), f"DOG_{name.upper()}"), matrices()[name], rtol=1e-6, atol=1e-7
+        _glsl_matrix(glsl_snippet(GEN), EXPORT_CONSTANTS[name]), matrices()[name], rtol=1e-6, atol=1e-7
     )
 
 
@@ -91,7 +93,7 @@ def _shader_pipeline_f32(srgb: np.ndarray, m: np.ndarray) -> np.ndarray:
 
 @pytest.mark.parametrize("name", EXPORT_VARIANTS)
 def test_shader_math_from_snippet_reproduces_golden_vectors(name):
-    m = _glsl_matrix(glsl_snippet(GEN), f"DOG_{name.upper()}")
+    m = _glsl_matrix(glsl_snippet(GEN), EXPORT_CONSTANTS[name])
     doc = golden_document(GEN)
     tol = doc["tolerance_8bit"]["recommended"]
     inputs = np.array([v["srgb"] for v in doc["vectors"]], dtype=np.float32)
@@ -140,7 +142,7 @@ def test_shader_shadow_lift_reproduces_golden_vectors():
     glsl = glsl_snippet(GEN)
     doc = golden_document(GEN)
     lift = doc["shadow_lift_vectors"]
-    m = _glsl_matrix(glsl, f"DOG_{lift['variant'].upper()}").astype(np.float32)
+    m = _glsl_matrix(glsl, EXPORT_CONSTANTS[lift["variant"]]).astype(np.float32)
     luma = _glsl_luma(glsl)
     inputs = np.array([v["srgb"] for v in doc["vectors"]], dtype=np.float32)
     c = inputs / np.float32(255)
@@ -177,9 +179,16 @@ def test_matrix_document_contents():
     doc = matrix_document(GEN)
     dog = doc["profiles"]["dog"]
     assert dog["default_variant"] == DEFAULT_VARIANT == "v2"
-    assert set(dog["variants"]) == set(EXPORT_VARIANTS)
-    for name, m in matrices().items():
-        np.testing.assert_array_equal(dog["variants"][name]["matrix"], m)
+    assert set(dog["variants"]) == {"v2", "v0"}
+    cat = doc["profiles"]["cat"]
+    assert cat["default_variant"] == "cat" and set(cat["variants"]) == {"cat"}
+    assert (dog["acuity_ratio"], cat["acuity_ratio"]) == (3.75, 3.5)
+    assert cat["variants"]["cat"]["derivation"]["s_peak_nm"] == 450.0
+    assert set(EXPORT_VARIANTS) == {v for p in EXPORT_PROFILES.values() for v in p.variants}
+    for animal, profile in doc["profiles"].items():
+        for name, m in matrices().items():
+            if name in profile["variants"]:
+                np.testing.assert_array_equal(profile["variants"][name]["matrix"], m)
     ac = doc["acuity"]
     assert ac["enabled_by_default"] is False and ac["default_exaggeration"] == 1.0
     assert ac["k"] == pytest.approx(1.366, abs=1e-3)
@@ -223,3 +232,20 @@ def test_committed_export_is_not_stale():
         on_disk = (EXPORT_DIR / fname).read_text(encoding="utf-8")
         strip = lambda t: "\n".join(t.splitlines()[1:])  # noqa: E731  (first line names the commit)
         assert strip(on_disk) == strip(text), f"export/{fname} is stale: run scripts/export_constants.py"
+
+
+def test_cat_acuity_is_exported_for_the_android_sigma_helper():
+    kotlin = kotlin_snippet(GEN)
+    assert "const val CAT_ACUITY_RATIO = 3.5f" in kotlin
+    assert "const val DOG_ACUITY_RATIO = 3.75f" in kotlin
+    assert "acuityRatio: Float = ACUITY_RATIO" in kotlin
+
+
+def test_cat_traits_are_exported():
+    doc = matrix_document(GEN)
+    assert doc["profiles"]["cat"]["shadow_gamma"] == 0.85 and doc["profiles"]["cat"]["peripheral_blur"] == 1.0
+    assert doc["profiles"]["dog"]["shadow_gamma"] == 1.0 and doc["profiles"]["dog"]["peripheral_blur"] == 0.0
+    assert "r2" in doc["acuity"]["peripheral_blur"] and "inherent" in doc["shadow_lift"]
+    kotlin = kotlin_snippet(GEN)
+    for line in ("CAT_SHADOW_GAMMA = 0.85f", "CAT_PERIPHERAL_BLUR = 1f", "DOG_SHADOW_GAMMA = 1f"):
+        assert f"const val {line}" in kotlin

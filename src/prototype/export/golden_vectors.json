@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "caveat": "Approximation of what a dog's cones capture, not of what a dog subjectively experiences. Assumes sRGB input and a modelled display (Gaussian primaries); see src/prototype/README.md.",
+  "caveat": "Approximation of what a dog's or cat's cones capture, not of what the animal subjectively experiences. Assumes sRGB input and a modelled display (Gaussian primaries); see src/prototype/README.md.",
   "generator": {
     "script": "src/prototype/scripts/export_constants.py",
-    "git_commit": "3a42986f9e07a3a927013d606eb9f98c30dad7dd",
-    "git_dirty": true
+    "git_commit": "d80c76c29ebc459a46b0a956d00c353ea4e66fc4",
+    "git_dirty": false
   },
   "description": "Colour step only: decode sRGB, multiply by the matrix, clamp each channel to [0, 1], encode, round to 8 bits. No blur, no shadow lift.",
   "tolerance_8bit": {
@@ -25,6 +25,11 @@
         "srgb": [0, 0, 0],
         "linear_unclipped": [0.0, 0.0, 0.0],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [0, 0, 0],
+        "linear_unclipped": [0.0, 0.0, 0.0],
+        "clipped": false
       }
     },
     {
@@ -36,6 +41,11 @@
         "clipped": false
       },
       "v0": {
+        "srgb": [255, 255, 255],
+        "linear_unclipped": [1.0, 1.0, 1.0],
+        "clipped": false
+      },
+      "cat": {
         "srgb": [255, 255, 255],
         "linear_unclipped": [1.0, 1.0, 1.0],
         "clipped": false
@@ -53,6 +63,11 @@
         "srgb": [147, 147, 0],
         "linear_unclipped": [0.29275, 0.29275, -0.02234],
         "clipped": true
+      },
+      "cat": {
+        "srgb": [155, 135, 0],
+        "linear_unclipped": [0.32865444, 0.24255417, -0.00672457],
+        "clipped": true
       }
     },
     {
@@ -66,6 +81,11 @@
       "v0": {
         "srgb": [219, 219, 41],
         "linear_unclipped": [0.70725, 0.70725, 0.02234],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [244, 214, 24],
+        "linear_unclipped": [0.90322669, 0.67366821, 0.00904723],
         "clipped": false
       }
     },
@@ -81,6 +101,11 @@
         "srgb": [0, 0, 255],
         "linear_unclipped": [0.0, 0.0, 1.0],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [0, 82, 255],
+        "linear_unclipped": [-0.23188113, 0.08377762, 0.99767735],
+        "clipped": true
       }
     },
     {
@@ -94,6 +119,11 @@
       "v0": {
         "srgb": [219, 219, 255],
         "linear_unclipped": [0.70725, 0.70725, 1.02234],
+        "clipped": true
+      },
+      "cat": {
+        "srgb": [214, 226, 255],
+        "linear_unclipped": [0.67134556, 0.75744583, 1.00672457],
         "clipped": true
       }
     },
@@ -109,6 +139,11 @@
         "srgb": [147, 147, 252],
         "linear_unclipped": [0.29275, 0.29275, 0.97766],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [88, 155, 254],
+        "linear_unclipped": [0.09677331, 0.32633179, 0.99095277],
+        "clipped": false
       }
     },
     {
@@ -123,6 +158,11 @@
         "srgb": [255, 255, 0],
         "linear_unclipped": [1.0, 1.0, 0.0],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [255, 245, 8],
+        "linear_unclipped": [1.23188113, 0.91622238, 0.00232265],
+        "clipped": true
       }
     },
     {
@@ -134,6 +174,11 @@
         "clipped": false
       },
       "v0": {
+        "srgb": [16, 16, 16],
+        "linear_unclipped": [0.00518152, 0.00518152, 0.00518152],
+        "clipped": false
+      },
+      "cat": {
         "srgb": [16, 16, 16],
         "linear_unclipped": [0.00518152, 0.00518152, 0.00518152],
         "clipped": false
@@ -151,6 +196,11 @@
         "srgb": [32, 32, 32],
         "linear_unclipped": [0.01444384, 0.01444384, 0.01444384],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [32, 32, 32],
+        "linear_unclipped": [0.01444384, 0.01444384, 0.01444384],
+        "clipped": false
       }
     },
     {
@@ -162,6 +212,11 @@
         "clipped": false
       },
       "v0": {
+        "srgb": [64, 64, 64],
+        "linear_unclipped": [0.05126946, 0.05126946, 0.05126946],
+        "clipped": false
+      },
+      "cat": {
         "srgb": [64, 64, 64],
         "linear_unclipped": [0.05126946, 0.05126946, 0.05126946],
         "clipped": false
@@ -179,6 +234,11 @@
         "srgb": [96, 96, 96],
         "linear_unclipped": [0.11697067, 0.11697067, 0.11697067],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [96, 96, 96],
+        "linear_unclipped": [0.11697067, 0.11697067, 0.11697067],
+        "clipped": false
       }
     },
     {
@@ -190,6 +250,11 @@
         "clipped": false
       },
       "v0": {
+        "srgb": [128, 128, 128],
+        "linear_unclipped": [0.2158605, 0.2158605, 0.2158605],
+        "clipped": false
+      },
+      "cat": {
         "srgb": [128, 128, 128],
         "linear_unclipped": [0.2158605, 0.2158605, 0.2158605],
         "clipped": false
@@ -207,6 +272,11 @@
         "srgb": [160, 160, 160],
         "linear_unclipped": [0.3515326, 0.3515326, 0.3515326],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [160, 160, 160],
+        "linear_unclipped": [0.3515326, 0.3515326, 0.3515326],
+        "clipped": false
       }
     },
     {
@@ -218,6 +288,11 @@
         "clipped": false
       },
       "v0": {
+        "srgb": [192, 192, 192],
+        "linear_unclipped": [0.52711513, 0.52711513, 0.52711513],
+        "clipped": false
+      },
+      "cat": {
         "srgb": [192, 192, 192],
         "linear_unclipped": [0.52711513, 0.52711513, 0.52711513],
         "clipped": false
@@ -235,6 +310,11 @@
         "srgb": [224, 224, 224],
         "linear_unclipped": [0.74540421, 0.74540421, 0.74540421],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [224, 224, 224],
+        "linear_unclipped": [0.74540421, 0.74540421, 0.74540421],
+        "clipped": false
       }
     },
     {
@@ -248,6 +328,11 @@
       "v0": {
         "srgb": [234, 234, 195],
         "linear_unclipped": [0.81993713, 0.81993713, 0.54632373],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [240, 230, 196],
+        "linear_unclipped": [0.87392239, 0.79095549, 0.55074854],
         "clipped": false
       }
     },
@@ -263,6 +348,11 @@
         "srgb": [221, 221, 146],
         "linear_unclipped": [0.72452299, 0.72452299, 0.28743674],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [233, 215, 148],
+        "linear_unclipped": [0.81140146, 0.67863539, 0.29424916],
+        "clipped": false
       }
     },
     {
@@ -276,6 +366,11 @@
       "v0": {
         "srgb": [209, 209, 123],
         "linear_unclipped": [0.63905633, 0.63905633, 0.19747994],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [222, 203, 125],
+        "linear_unclipped": [0.72881019, 0.59396727, 0.20356812],
         "clipped": false
       }
     },
@@ -291,6 +386,11 @@
         "srgb": [189, 189, 102],
         "linear_unclipped": [0.50998785, 0.50998785, 0.13382716],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [201, 182, 104],
+        "linear_unclipped": [0.58484361, 0.47055244, 0.13965503],
+        "clipped": false
       }
     },
     {
@@ -304,6 +404,11 @@
       "v0": {
         "srgb": [156, 156, 61],
         "linear_unclipped": [0.33392598, 0.33392598, 0.04719042],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [167, 149, 65],
+        "linear_unclipped": [0.38828905, 0.30213822, 0.05271313],
         "clipped": false
       }
     },
@@ -319,6 +424,11 @@
         "srgb": [105, 105, 31],
         "linear_unclipped": [0.1422234, 0.1422234, 0.01372097],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [113, 100, 35],
+        "linear_unclipped": [0.16549877, 0.12728084, 0.01663172],
+        "clipped": false
       }
     },
     {
@@ -332,6 +442,11 @@
       "v0": {
         "srgb": [68, 68, 23],
         "linear_unclipped": [0.05742108, 0.05742108, 0.00876304],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [73, 64, 25],
+        "linear_unclipped": [0.06609786, 0.05167556, 0.00991989],
         "clipped": false
       }
     },
@@ -347,6 +462,11 @@
         "srgb": [197, 197, 0],
         "linear_unclipped": [0.55886139, 0.55886139, -0.0139343],
         "clipped": true
+      },
+      "cat": {
+        "srgb": [213, 187, 0],
+        "linear_unclipped": [0.66850443, 0.49603, -0.00332045],
+        "clipped": true
       }
     },
     {
@@ -360,6 +480,11 @@
       "v0": {
         "srgb": [96, 96, 7],
         "linear_unclipped": [0.11767235, 0.11767235, 0.00207377],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [104, 90, 16],
+        "linear_unclipped": [0.13709505, 0.10325972, 0.00529921],
         "clipped": false
       }
     },
@@ -375,6 +500,11 @@
         "srgb": [128, 128, 0],
         "linear_unclipped": [0.2158605, 0.2158605, 0.0],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [141, 123, 2],
+        "linear_unclipped": [0.26591448, 0.19777622, 0.00050137],
+        "clipped": false
       }
     },
     {
@@ -388,6 +518,11 @@
       "v0": {
         "srgb": [115, 115, 71],
         "linear_unclipped": [0.17228495, 0.17228495, 0.06374858],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [124, 113, 71],
+        "linear_unclipped": [0.20161502, 0.16585791, 0.06233341],
         "clipped": false
       }
     },
@@ -403,6 +538,11 @@
         "srgb": [85, 85, 9],
         "linear_unclipped": [0.0901303, 0.0901303, 0.00284696],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [95, 83, 4],
+        "linear_unclipped": [0.11510511, 0.08585071, 0.00115296],
+        "clipped": false
       }
     },
     {
@@ -416,6 +556,11 @@
       "v0": {
         "srgb": [189, 189, 236],
         "linear_unclipped": [0.50744714, 0.50744714, 0.83914571],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [178, 195, 235],
+        "linear_unclipped": [0.44446435, 0.54415866, 0.83279506],
         "clipped": false
       }
     },
@@ -431,6 +576,11 @@
         "srgb": [0, 0, 128],
         "linear_unclipped": [0.0, 0.0, 0.2158605],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [0, 37, 128],
+        "linear_unclipped": [-0.05005398, 0.01808428, 0.21535913],
+        "clipped": true
       }
     },
     {
@@ -444,6 +594,11 @@
       "v0": {
         "srgb": [71, 71, 127],
         "linear_unclipped": [0.06319316, 0.06319316, 0.21103818],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [40, 75, 127],
+        "linear_unclipped": [0.02088954, 0.07044214, 0.21390756],
         "clipped": false
       }
     },
@@ -459,6 +614,11 @@
         "srgb": [213, 213, 201],
         "linear_unclipped": [0.66555217, 0.66555217, 0.58663754],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [213, 210, 202],
+        "linear_unclipped": [0.66627906, 0.64768702, 0.59385905],
+        "clipped": false
       }
     },
     {
@@ -473,6 +633,11 @@
         "srgb": [246, 246, 82],
         "linear_unclipped": [0.92327327, 0.92327327, 0.0840425],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [255, 239, 81],
+        "linear_unclipped": [1.12761403, 0.85920181, 0.08209091],
+        "clipped": true
       }
     },
     {
@@ -486,6 +651,11 @@
       "v0": {
         "srgb": [232, 232, 107],
         "linear_unclipped": [0.80429904, 0.80429904, 0.14785998],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [249, 224, 109],
+        "linear_unclipped": [0.9480881, 0.74390724, 0.1527599],
         "clipped": false
       }
     },
@@ -501,6 +671,11 @@
         "srgb": [218, 218, 97],
         "linear_unclipped": [0.70380284, 0.70380284, 0.1195114],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [241, 215, 92],
+        "linear_unclipped": [0.87575612, 0.67820754, 0.10626204],
+        "clipped": false
       }
     },
     {
@@ -514,6 +689,11 @@
       "v0": {
         "srgb": [205, 205, 41],
         "linear_unclipped": [0.61111479, 0.61111479, 0.02236168],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [227, 199, 34],
+        "linear_unclipped": [0.76660022, 0.57393633, 0.01613307],
         "clipped": false
       }
     },
@@ -529,6 +709,11 @@
         "srgb": [26, 26, 84],
         "linear_unclipped": [0.01007109, 0.01007109, 0.08854089],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [0, 35, 84],
+        "linear_unclipped": [-0.00831535, 0.01652293, 0.08843505],
+        "clipped": true
       }
     },
     {
@@ -542,6 +727,11 @@
       "v0": {
         "srgb": [128, 128, 176],
         "linear_unclipped": [0.2176077, 0.2176077, 0.43503419],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [108, 130, 177],
+        "linear_unclipped": [0.15027942, 0.22499247, 0.44130275],
         "clipped": false
       }
     },
@@ -557,6 +747,11 @@
         "srgb": [97, 97, 18],
         "linear_unclipped": [0.11850852, 0.11850852, 0.00614219],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [101, 89, 28],
+        "linear_unclipped": [0.13075569, 0.10025116, 0.01193399],
+        "clipped": false
       }
     },
     {
@@ -570,6 +765,11 @@
       "v0": {
         "srgb": [118, 118, 202],
         "linear_unclipped": [0.1807972, 0.1807972, 0.58937155],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [76, 125, 202],
+        "linear_unclipped": [0.07303218, 0.20668519, 0.59363931],
         "clipped": false
       }
     },
@@ -585,6 +785,11 @@
         "srgb": [131, 131, 104],
         "linear_unclipped": [0.2279662, 0.2279662, 0.1397806],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [139, 131, 103],
+        "linear_unclipped": [0.25991224, 0.22794173, 0.13538026],
+        "clipped": false
       }
     },
     {
@@ -599,6 +804,11 @@
         "srgb": [60, 60, 203],
         "linear_unclipped": [0.04504009, 0.04504009, 0.59407187],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [0, 84, 203],
+        "linear_unclipped": [-0.08747613, 0.08770243, 0.59488191],
+        "clipped": true
       }
     },
     {
@@ -613,6 +823,11 @@
         "srgb": [64, 64, 228],
         "linear_unclipped": [0.05078422, 0.05078422, 0.77322942],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [0, 93, 228],
+        "linear_unclipped": [-0.1210499, 0.1085469, 0.77327883],
+        "clipped": true
       }
     },
     {
@@ -626,6 +841,11 @@
       "v0": {
         "srgb": [45, 45, 1],
         "linear_unclipped": [0.02584649, 0.02584649, 0.0002871],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [48, 41, 4],
+        "linear_unclipped": [0.02972643, 0.02239432, 0.00116629],
         "clipped": false
       }
     },
@@ -641,6 +861,11 @@
         "srgb": [228, 228, 49],
         "linear_unclipped": [0.77392782, 0.77392782, 0.03013723],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [250, 220, 47],
+        "linear_unclipped": [0.95463297, 0.71688835, 0.02856671],
+        "clipped": false
       }
     },
     {
@@ -655,6 +880,11 @@
         "srgb": [30, 30, 245],
         "linear_unclipped": [0.01326454, 0.01326454, 0.913247],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [0, 84, 245],
+        "linear_unclipped": [-0.19517766, 0.08882096, 0.91105782],
+        "clipped": true
       }
     },
     {
@@ -668,6 +898,11 @@
       "v0": {
         "srgb": [139, 139, 228],
         "linear_unclipped": [0.25788301, 0.25788301, 0.7760435],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [108, 151, 227],
+        "linear_unclipped": [0.15085903, 0.30970083, 0.76958187],
         "clipped": false
       }
     },
@@ -683,6 +918,11 @@
         "srgb": [100, 100, 90],
         "linear_unclipped": [0.12822775, 0.12822775, 0.10218144],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [102, 99, 90],
+        "linear_unclipped": [0.13416712, 0.12598143, 0.10228211],
+        "clipped": false
       }
     },
     {
@@ -697,6 +937,11 @@
         "srgb": [80, 80, 220],
         "linear_unclipped": [0.0805517, 0.0805517, 0.71819075],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [0, 101, 221],
+        "linear_unclipped": [-0.07539588, 0.12878965, 0.71995053],
+        "clipped": true
       }
     },
     {
@@ -710,6 +955,11 @@
       "v0": {
         "srgb": [93, 93, 0],
         "linear_unclipped": [0.10991382, 0.10991382, 9.724e-05],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [101, 88, 9],
+        "linear_unclipped": [0.12942468, 0.09690073, 0.00273692],
         "clipped": false
       }
     },
@@ -725,6 +975,11 @@
         "srgb": [117, 117, 64],
         "linear_unclipped": [0.17669411, 0.17669411, 0.05088366],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [126, 114, 63],
+        "linear_unclipped": [0.21037788, 0.16904287, 0.04936917],
+        "clipped": false
       }
     },
     {
@@ -738,6 +993,11 @@
       "v0": {
         "srgb": [139, 139, 171],
         "linear_unclipped": [0.26011351, 0.26011351, 0.40463651],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [125, 139, 172],
+        "linear_unclipped": [0.20456451, 0.25810789, 0.41312742],
         "clipped": false
       }
     },
@@ -753,6 +1013,11 @@
         "srgb": [103, 103, 226],
         "linear_unclipped": [0.13530441, 0.13530441, 0.76164287],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [0, 120, 226],
+        "linear_unclipped": [-0.00807143, 0.18896893, 0.75944301],
+        "clipped": true
       }
     },
     {
@@ -766,6 +1031,11 @@
       "v0": {
         "srgb": [136, 136, 70],
         "linear_unclipped": [0.24558913, 0.24558913, 0.06159473],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [146, 132, 70],
+        "linear_unclipped": [0.28883392, 0.23054595, 0.06178979],
         "clipped": false
       }
     },
@@ -781,6 +1051,11 @@
         "srgb": [153, 153, 31],
         "linear_unclipped": [0.31744432, 0.31744432, 0.01343008],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [166, 146, 35],
+        "linear_unclipped": [0.38093371, 0.2874879, 0.01694228],
+        "clipped": false
       }
     },
     {
@@ -794,6 +1069,11 @@
       "v0": {
         "srgb": [125, 125, 156],
         "linear_unclipped": [0.20500754, 0.20500754, 0.33216198],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [108, 124, 158],
+        "linear_unclipped": [0.15133443, 0.20016886, 0.34155501],
         "clipped": false
       }
     },
@@ -809,6 +1089,11 @@
         "srgb": [161, 161, 225],
         "linear_unclipped": [0.35400833, 0.35400833, 0.75496686],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [144, 169, 224],
+        "linear_unclipped": [0.27693955, 0.39778658, 0.74766465],
+        "clipped": false
       }
     },
     {
@@ -822,6 +1107,11 @@
       "v0": {
         "srgb": [182, 182, 47],
         "linear_unclipped": [0.46927802, 0.46927802, 0.02806058],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [201, 177, 43],
+        "linear_unclipped": [0.58451551, 0.44059324, 0.02390742],
         "clipped": false
       }
     },
@@ -837,6 +1127,11 @@
         "srgb": [171, 171, 100],
         "linear_unclipped": [0.40738859, 0.40738859, 0.12807281],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [184, 168, 99],
+        "linear_unclipped": [0.48202696, 0.39030958, 0.12476813],
+        "clipped": false
       }
     },
     {
@@ -851,6 +1146,11 @@
         "srgb": [103, 103, 248],
         "linear_unclipped": [0.1366895, 0.1366895, 0.941417],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [0, 123, 249],
+        "linear_unclipped": [-0.05970792, 0.19783365, 0.94347168],
+        "clipped": true
       }
     },
     {
@@ -864,6 +1164,11 @@
       "v0": {
         "srgb": [123, 123, 249],
         "linear_unclipped": [0.19840383, 0.19840383, 0.94920089],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [46, 140, 249],
+        "linear_unclipped": [0.02745911, 0.26332183, 0.94619497],
         "clipped": false
       }
     },
@@ -879,6 +1184,11 @@
         "srgb": [162, 162, 182],
         "linear_unclipped": [0.3616939, 0.3616939, 0.46930494],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [159, 165, 181],
+        "linear_unclipped": [0.34876344, 0.37840907, 0.46423953],
+        "clipped": false
       }
     },
     {
@@ -893,6 +1203,11 @@
         "srgb": [83, 83, 233],
         "linear_unclipped": [0.08623636, 0.08623636, 0.81680746],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [0, 108, 233],
+        "linear_unclipped": [-0.07990767, 0.14953076, 0.8138042],
+        "clipped": true
       }
     },
     {
@@ -906,6 +1221,11 @@
       "v0": {
         "srgb": [201, 201, 142],
         "linear_unclipped": [0.58635322, 0.58635322, 0.27158862],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [216, 200, 140],
+        "linear_unclipped": [0.68834403, 0.57855775, 0.26070297],
         "clipped": false
       }
     },
@@ -921,6 +1241,11 @@
         "srgb": [218, 218, 31],
         "linear_unclipped": [0.69781546, 0.69781546, 0.01350984],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [240, 211, 25],
+        "linear_unclipped": [0.87034584, 0.64935795, 0.00955066],
+        "clipped": false
       }
     },
     {
@@ -934,6 +1259,11 @@
       "v0": {
         "srgb": [129, 129, 199],
         "linear_unclipped": [0.21869039, 0.21869039, 0.56861066],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [94, 132, 200],
+        "linear_unclipped": [0.11182236, 0.23152839, 0.578103],
         "clipped": false
       }
     },
@@ -949,6 +1279,11 @@
         "srgb": [53, 53, 94],
         "linear_unclipped": [0.0354342, 0.0354342, 0.1107075],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [34, 57, 94],
+        "linear_unclipped": [0.01594227, 0.04043552, 0.11134875],
+        "clipped": false
       }
     },
     {
@@ -962,6 +1297,11 @@
       "v0": {
         "srgb": [147, 147, 32],
         "linear_unclipped": [0.29389581, 0.29389581, 0.01462444],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [163, 143, 30],
+        "linear_unclipped": [0.36474861, 0.27440267, 0.01283179],
         "clipped": false
       }
     },
@@ -977,6 +1317,11 @@
         "srgb": [93, 93, 31],
         "linear_unclipped": [0.10833474, 0.10833474, 0.01373263],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [103, 91, 28],
+        "linear_unclipped": [0.1359312, 0.10403414, 0.01168531],
+        "clipped": false
       }
     },
     {
@@ -990,6 +1335,11 @@
       "v0": {
         "srgb": [172, 172, 56],
         "linear_unclipped": [0.41100798, 0.41100798, 0.03918613],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [190, 168, 51],
+        "linear_unclipped": [0.51512413, 0.39132013, 0.03288105],
         "clipped": false
       }
     },
@@ -1005,6 +1355,11 @@
         "srgb": [244, 244, 235],
         "linear_unclipped": [0.90868675, 0.90868675, 0.82982229],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [246, 244, 235],
+        "linear_unclipped": [0.92539778, 0.90107023, 0.83063678],
+        "clipped": false
       }
     },
     {
@@ -1018,6 +1373,11 @@
       "v0": {
         "srgb": [104, 104, 170],
         "linear_unclipped": [0.13931274, 0.13931274, 0.39994895],
+        "clipped": false
+      },
+      "cat": {
+        "srgb": [82, 113, 169],
+        "linear_unclipped": [0.08418837, 0.16455043, 0.39721583],
         "clipped": false
       }
     },
@@ -1033,6 +1393,11 @@
         "srgb": [110, 110, 247],
         "linear_unclipped": [0.15473213, 0.15473213, 0.93289388],
         "clipped": false
+      },
+      "cat": {
+        "srgb": [0, 130, 247],
+        "linear_unclipped": [-0.02107978, 0.22288937, 0.92923235],
+        "clipped": true
       }
     }
   ],
