@@ -6,6 +6,9 @@ Every variant is a 3x3 matrix that acts on *linear* sRGB column vectors:
 
 from __future__ import annotations
 
+import functools
+import warnings
+
 import numpy as np
 
 # V0: stock deuteranopia matrix, Vienot, Brettel & Mollon (1999), for linear
@@ -33,10 +36,37 @@ VARIANTS: dict[str, np.ndarray] = {
     "v2": DOG_V2,
 }
 
+# Every id get_variant() understands. V1 is optional: it needs colour-science.
+VARIANT_IDS = ("v0", "v1", "v2")
+
+
+@functools.cache
+def machado_deuteranopia() -> np.ndarray:
+    """V1: Machado, Oliveira & Fernandes (2009) deuteranopia matrix (severity 1.0).
+
+    Taken from the optional ``colour-science`` package as an independent
+    cross-check of V0 and V2. It models a human deuteranope, not a dog, so it
+    is a reference point rather than a candidate to ship.
+    """
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")  # colour warns that SciPy is absent
+            from colour.blindness import matrix_cvd_Machado2009
+
+            return np.asarray(matrix_cvd_Machado2009("Deuteranomaly", 1.0), dtype=np.float64)
+    except ImportError as exc:
+        raise ImportError(
+            "variant v1 needs the optional colour-science package: "
+            "pip install -r requirements-extra.txt"
+        ) from exc
+
 
 def get_variant(name: str) -> np.ndarray:
     """Return the 3x3 matrix for a variant id (case-insensitive)."""
+    key = name.lower()
+    if key == "v1":
+        return machado_deuteranopia()
     try:
-        return VARIANTS[name.lower()]
+        return VARIANTS[key]
     except KeyError:
-        raise ValueError(f"unknown variant {name!r}; available: {sorted(VARIANTS)}") from None
+        raise ValueError(f"unknown variant {name!r}; available: {list(VARIANT_IDS)}") from None

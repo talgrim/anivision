@@ -97,3 +97,35 @@ All three constant sets that were written from memory have now been checked.
   Maximum absolute errors: x 0.015, y 0.008, z 0.024 (z peaks at 1.78, so about 1.3%). RMS 0.003
   to 0.007. The sums over the grid agree to within 0.1% (106.8 for all three). That is more than
   accurate enough for this prototype.
+
+## V1 cross-check (colour-science, 2026-11-12)
+
+V1 is the Machado, Oliveira & Fernandes (2009) deuteranopia matrix (severity 1.0) from the
+optional `colour-science` package (0.4.7). The library has no Viénot implementation, so it
+cannot cross-check V0 directly (V0 was checked against the paper instead, see above). V1 is
+still a useful independent reference: a different construction of the same two-cone idea.
+
+```
+V1 = [[ 0.36732  0.86065 -0.22797]
+      [ 0.28009  0.67250  0.04741]
+      [-0.01182  0.04294  0.96888]]
+```
+
+- Rows sum to 1 (grays stay gray) and the matrix is numerically rank 2. It is not an exact
+  projection (`V1 @ V1 - V1` reaches 0.036), unlike V0 and V2.
+- Frobenius distances: **‖V1−V2‖ = 0.098**, ‖V1−V0‖ = 0.294, ‖V0−V2‖ = 0.327.
+  V1 is much closer to V2 than to V0.
+- V1 and V2 both have a negative blue-to-red term in the first row (-0.228 and -0.233). V0 has
+  none. So the 475 nm anchor's negative red is not a quirk of my derivation: an independently
+  built physiological model lands on almost the same matrix.
+- Caveat: Machado's matrix models a human deuteranope (human cone fundamentals), not a dog.
+  Treat it as evidence about the *structure* of a physiological derivation, not as proof that
+  V2's dog-specific numbers are right.
+- The same tests also compare `colorspace.py` and `cie_cmf` with the library: the sRGB transfer
+  functions agree to 1e-9; the RGB-to-XYZ matrix and D65 white differ by up to 2e-4 because
+  `colour` uses the 4-decimal IEC matrix and xy-derived white, and ours is the unrounded
+  matrix with the conventional Z = 1.08883.
+- `tests/test_crosscheck.py` is skipped when `colour-science` is absent. The CLI accepts
+  `--variant v1` and exits with an install hint if the package is missing.
+- Consequence for the Phase 3 anchor decision: V1 supports keeping the 475 nm anchor, since
+  an independently derived matrix shares V2's negative-red structure and its clipping.

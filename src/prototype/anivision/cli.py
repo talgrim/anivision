@@ -9,7 +9,7 @@ import numpy as np
 from PIL import Image, ImageOps
 
 from .simulate import simulate
-from .variants import VARIANTS, get_variant
+from .variants import VARIANT_IDS, get_variant
 
 
 def load_rgb(path: str) -> np.ndarray:
@@ -36,15 +36,20 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--variant",
         default="v0",
-        choices=sorted(VARIANTS),
+        choices=list(VARIANT_IDS),
         help="colour transform variant (default: %(default)s)",
     )
     return p
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
-    result = simulate(load_rgb(args.input), get_variant(args.variant))
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    try:
+        matrix = get_variant(args.variant)
+    except ImportError as exc:  # v1 without colour-science
+        parser.error(str(exc))
+    result = simulate(load_rgb(args.input), matrix)
     save_rgb(args.output, result.image)
     print(
         f"{args.variant}: {result.out_of_gamut_pixels}/{result.total_pixels} pixels "
