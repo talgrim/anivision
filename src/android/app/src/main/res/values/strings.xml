@@ -22,5 +22,14 @@
     <string name="photo_saved">Saved to Pictures/AniVision</string>
     <string name="photo_failed">The photo could not be saved.</string>
 
+    <string name="gallery">Gallery</string>
+    <string name="imported_photo_description">Gallery photo as a dog might see it</string>
+    <string name="import_failed">That image could not be opened.</string>
+    <string name="close">Close</string>
+    <string name="save">Save</string>
+    <string name="saved_label">Saved</string>
+    <string name="share">Share</string>
+    <string name="share_title">Share photo</string>
+
     <string name="camera_unavailable">The camera could not be started.</string>
 </resources>

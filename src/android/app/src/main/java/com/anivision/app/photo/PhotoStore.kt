@@ -2,6 +2,7 @@ package com.anivision.app.photo
 
 import android.content.ContentResolver
 import android.content.ContentValues
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
@@ -25,6 +26,10 @@ class PhotoStore(private val resolver: ContentResolver) {
             insert(displayName(now), write)
         }
 
+    /** Encodes [bitmap] as a JPEG of the given [quality] (0-100) and saves it like [saveJpeg]. */
+    suspend fun saveBitmap(bitmap: Bitmap, quality: Int = JPEG_QUALITY, now: Instant = Instant.now()): Uri =
+        saveJpeg(now) { out -> check(bitmap.compress(Bitmap.CompressFormat.JPEG, quality, out)) { "JPEG encoding failed" } }
+
     private fun insert(name: String, write: (OutputStream) -> Unit): Uri {
         val values = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, name)
@@ -46,6 +51,7 @@ class PhotoStore(private val resolver: ContentResolver) {
 
     internal companion object {
         const val ALBUM = "AniVision"
+        const val JPEG_QUALITY = 95
         private const val MIME_JPEG = "image/jpeg"
         private val STAMP = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss_SSS")
 
