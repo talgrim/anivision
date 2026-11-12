@@ -62,6 +62,18 @@ internal class EglCore {
         return eglSurface
     }
 
+    /** An off-screen surface of the given size, for rendering without a window (tests, still capture). */
+    fun createPbufferSurface(width: Int, height: Int): EGLSurface {
+        val eglSurface = EGL14.eglCreatePbufferSurface(
+            display, config,
+            intArrayOf(EGL14.EGL_WIDTH, width, EGL14.EGL_HEIGHT, height, EGL14.EGL_NONE), 0,
+        )
+        check(eglSurface != EGL14.EGL_NO_SURFACE) {
+            "eglCreatePbufferSurface failed: 0x${Integer.toHexString(EGL14.eglGetError())}"
+        }
+        return eglSurface
+    }
+
     fun makeCurrent(surface: EGLSurface) {
         check(EGL14.eglMakeCurrent(display, surface, surface, context)) { "eglMakeCurrent failed" }
     }

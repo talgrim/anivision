@@ -19,11 +19,14 @@ import java.util.concurrent.Executor
  * [settings] is read once per frame from the GL thread, so it may be backed by any thread-safe
  * holder; changes apply from the next frame without rebinding the camera.
  *
+ * If [frameStats] is given, every drawn frame is reported to it (debug builds log it).
+ *
  * Call [release] after the use cases that feed it were unbound.
  */
 class VisionSurfaceProcessor(
     private val settings: () -> VisionSettings,
     private val onError: (Throwable) -> Unit,
+    private val frameStats: FrameStats? = null,
 ) : SurfaceProcessor {
     private val thread = HandlerThread("AniVisionGL").apply { start() }
     private val handler = Handler(thread.looper)
@@ -119,12 +122,14 @@ class VisionSurfaceProcessor(
             // Always consume the frame, or the camera stalls waiting for a free buffer.
             texture.updateTexImage()
             val target = output ?: return@guarded
+            val startNs = System.nanoTime()
             texture.getTransformMatrix(textureMatrix)
             target.surfaceOutput.updateTransformMatrix(outputMatrix, textureMatrix)
             egl.makeCurrent(target.eglSurface)
             val size = target.surfaceOutput.size
             renderer.draw(outputMatrix, size.width, size.height, settings())
             egl.swap(target.eglSurface, texture.timestamp)
+            frameStats?.let { val nowNs = System.nanoTime(); it.record(nowNs, nowNs - startNs) }
         }
     }
 

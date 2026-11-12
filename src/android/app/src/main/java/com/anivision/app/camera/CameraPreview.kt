@@ -1,5 +1,6 @@
 package com.anivision.app.camera
 
+import android.util.Log
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
 import androidx.camera.core.UseCaseGroup
@@ -18,14 +19,19 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.anivision.app.BuildConfig
 import com.anivision.app.R
 import com.anivision.app.ui.MessageScreen
 import com.anivision.app.vision.VisionSettings
+import com.anivision.app.vision.gl.FrameStats
 import com.anivision.app.vision.gl.VisionEffect
 import com.anivision.app.vision.gl.VisionSurfaceProcessor
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.awaitCancellation
+
+/** Logcat tag of the debug-only frame rate report: `adb logcat -s AniVisionFps`. */
+private const val FPS_LOG_TAG = "AniVisionFps"
 
 /**
  * Live camera preview bound to the current lifecycle. Every frame goes through the GPU pipeline
@@ -53,7 +59,12 @@ fun CameraPreview(
         val provider = ProcessCameraProvider.awaitInstance(context)
         val preview = Preview.Builder().build()
         val onError: (Throwable) -> Unit = { failed = true }
-        val processor = VisionSurfaceProcessor(settings = { currentSettings.get() }, onError = onError)
+        val frameStats = if (BuildConfig.DEBUG) FrameStats(report = { Log.d(FPS_LOG_TAG, it) }) else null
+        val processor = VisionSurfaceProcessor(
+            settings = { currentSettings.get() },
+            onError = onError,
+            frameStats = frameStats,
+        )
         try {
             preview.setSurfaceProvider(previewView.surfaceProvider)
             val useCases = UseCaseGroup.Builder()
