@@ -37,7 +37,7 @@ More in `src/prototype/README.md`.
 
 ## Android app
 
-Planned stack: Kotlin, Jetpack Compose, CameraX, a GLSL fragment shader, minSdk 26.
+Planned stack: Kotlin, Jetpack Compose, CameraX, a GLSL fragment shader, minSdk 29.
 Build with Android Studio (latest stable, JDK 17 bundled) by opening `src/android/`, or from a
 terminal:
 

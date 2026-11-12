@@ -1,13 +1,11 @@
 package com.anivision.app.photo
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.net.Uri
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.core.content.ContextCompat
 import com.anivision.app.vision.VisionSettings
-import com.anivision.app.vision.gl.StillImageFilter
 import java.io.File
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -20,15 +18,14 @@ import kotlinx.coroutines.withContext
  *
  * CameraX writes the plain JPEG (cropped to the preview's view port and rotated through EXIF) to a
  * cache file. In normal view that file is copied to the gallery untouched. In an animal view it is
- * decoded, run through [StillImageFilter] (the same pipeline as the live preview) and saved as a
- * new JPEG. The cache file is always removed.
+ * run through [PhotoFilterer] (the same pipeline as the live preview) and saved as a new JPEG.
+ * The cache file is always removed.
  */
 class PhotoCapturer(
     private val context: Context,
     private val imageCapture: ImageCapture,
     private val store: PhotoStore = PhotoStore(context.contentResolver),
-    private val decoder: PhotoDecoder = PhotoDecoder(),
-    private val filter: StillImageFilter = StillImageFilter(),
+    private val filterer: PhotoFilterer = PhotoFilterer(),
 ) {
     /**
      * Captures and saves one photo and returns its uri. Call from the main thread; the camera must
@@ -50,16 +47,9 @@ class PhotoCapturer(
     }
 
     private suspend fun saveFiltered(file: File, settings: VisionSettings): Uri {
-        val photo = withContext(Dispatchers.IO) { decoder.decode(file, filter.maxLongEdge) }
-        val filtered = try {
-            filter.filter(photo.bitmap, photo.rotationDegrees, settings)
-        } finally {
-            photo.bitmap.recycle()
-        }
+        val filtered = filterer.render(file, settings)
         try {
-            return store.saveJpeg { out ->
-                check(filtered.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out)) { "JPEG encoding failed" }
-            }
+            return store.saveBitmap(filtered)
         } finally {
             filtered.recycle()
         }
@@ -76,9 +66,5 @@ class PhotoCapturer(
                 override fun onError(exception: ImageCaptureException) = continuation.resumeWithException(exception)
             },
         )
-    }
-
-    private companion object {
-        const val JPEG_QUALITY = 95
     }
 }

@@ -53,7 +53,7 @@ The final matrix should be derived from canine cone sensitivities (peaks 429 / 5
 | UI | Jetpack Compose | Current default. `PreviewView` is embedded via `AndroidView`. |
 | Camera | CameraX (`camera-core`, `camera-camera2`, `camera-lifecycle`, `camera-view`; later `camera-video`, `camera-effects`) | Lifecycle-aware, handles device quirks. |
 | Processing | GPU (GLSL fragment shader). Not CPU pixel loops. | Real-time at 30 fps without draining the battery. |
-| minSdk | 26 | Covers nearly all active devices. Does not depend on the API 31 `RenderEffect`. |
+| minSdk | 29 | Android 10+. Saving to the gallery needs no storage permission (scoped storage), and it does not depend on the API 31 `RenderEffect`. |
 | targetSdk / compileSdk | Latest stable | Play Store requirement. |
 | Build | Gradle Kotlin DSL + version catalog (`libs.versions.toml`) | Android Studio default. |
 | Package / applicationId | `com.anivision.app` (kept unless changed before the first release) | Hard to change after publishing. |
@@ -105,7 +105,7 @@ Needed:
 
 - JDK 17 (bundled with Android Studio)
 - Android Studio (latest stable) with the SDK Platform, Build-Tools and Platform-Tools
-- A **physical Android device** with USB debugging (the test device runs Android 11, API 30, which is above minSdk 26). The emulator's virtual camera is poor for judging color, so real hardware is strongly preferred.
+- A **physical Android device** with USB debugging (the test device runs Android 11, API 30, which is above minSdk 29). The emulator's virtual camera is poor for judging color, so real hardware is strongly preferred.
 - Python 3.10+ with `numpy`, `pillow` for the prototype
 
 ## 5. Scaffolding steps
@@ -116,7 +116,7 @@ Needed:
 3. Commit on `feature/android-scaffold`.
 
 ### Phase 1: Empty Android app
-1. In Android Studio: New Project, "Empty Activity" (Compose). Name `AniVision`, package `com.anivision.app`, minSdk 26, Kotlin DSL. Save it into `src/android/`.
+1. In Android Studio: New Project, "Empty Activity" (Compose). Name `AniVision`, package `com.anivision.app`, minSdk 29, Kotlin DSL. Save it into `src/android/`.
 2. Confirm it builds and launches on the device ("Hello" screen).
 3. Commit.
 
@@ -174,9 +174,9 @@ The prototype validated the look on still photos before the shader work. Details
 
 - [ ] Project builds from a clean clone (`./gradlew assembleDebug`)
 - [x] Camera permission flow works (grant, deny, deny permanently)
-- [ ] Live preview runs at about 30 fps with no visible stutter on a mid-range device
+- [x] Live preview runs at about 30 fps with no visible stutter on a mid-range device (verified in every mode tried on the test phone)
 - [ ] Red/green scenes collapse to yellow/brown as expected; blues and yellows stay distinct; grays stay neutral
-- [ ] Preview matches the Python prototype output within a small tolerance
+- [x] Preview matches the Python prototype output within a small tolerance (GPU golden vectors match within tolerance 1)
 - [ ] Rotation, front/back camera and app backgrounding/resume don't crash (rotation and backgrounding/resume verified in Phase 2, back camera only)
 - [x] Captured photos match what the preview showed (Phase 5; photos only, verified on the back camera in Dog view; video is out of v1 scope)
 
