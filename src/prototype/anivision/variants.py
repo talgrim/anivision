@@ -29,7 +29,12 @@ from .derive import derive  # noqa: E402  (after V0 so the module reads top-down
 
 # V2: dog-specific derivation from cone sensitivities (475 nm anchor, default
 # Gaussian primaries). See derive.py.
-DOG_V2 = derive().matrix
+DOG_V2 = derive().matrix.copy()
+
+# The matrices are shared module state: make them read-only so a caller cannot change what every
+# later simulate() uses.
+DEUTERANOPIA_VIENOT_1999.flags.writeable = False
+DOG_V2.flags.writeable = False
 
 VARIANTS: dict[str, np.ndarray] = {
     "v0": DEUTERANOPIA_VIENOT_1999,
@@ -53,7 +58,9 @@ def machado_deuteranopia() -> np.ndarray:
             warnings.simplefilter("ignore")  # colour warns that SciPy is absent
             from colour.blindness import matrix_cvd_Machado2009
 
-            return np.asarray(matrix_cvd_Machado2009("Deuteranomaly", 1.0), dtype=np.float64)
+            matrix = np.array(matrix_cvd_Machado2009("Deuteranomaly", 1.0), dtype=np.float64)
+            matrix.flags.writeable = False
+            return matrix
     except ImportError as exc:
         raise ImportError(
             "variant v1 needs the optional colour-science package: "
