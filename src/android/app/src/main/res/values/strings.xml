@@ -20,6 +20,8 @@
 
     <string name="blur_label">Acuity blur</string>
     <string name="blur_strength_label">Strength</string>
+    <string name="night_boost_label">Night boost</string>
+    <string name="night_boost_strength_label">Strength</string>
 
     <string name="take_photo">Take photo</string>
     <string name="photo_saved">Saved to Pictures/AniVision</string>

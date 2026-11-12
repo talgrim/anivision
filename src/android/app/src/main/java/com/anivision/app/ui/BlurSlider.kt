@@ -30,7 +30,7 @@ const val BLUR_STRENGTH_MAX = 3.5f
 /** Slider value when the blur is first switched on; 1.0 (physical) is too subtle to notice. */
 const val BLUR_STRENGTH_DEFAULT = 3.0f
 
-/** Blur strength slider, shown under the [BlurSwitch] while the blur is on. */
+/** Blur strength slider, shown under the [EffectSwitch] while the blur is on. */
 @Composable
 fun BlurSlider(
     strength: Float,

@@ -9,8 +9,8 @@ package com.anivision.app.vision.gl
  * - [Variant.BLUR_HORIZONTAL]: camera texture to a linear-light float texture.
  * - [Variant.BLUR_VERTICAL]: that texture to screen, with the colour step.
  *
- * The two colour functions are copied verbatim from `export/animal_vision.glsl`;
- * `VisionShadersTest` fails if the export changes.
+ * The two colour functions and the shadow lift are copied verbatim from
+ * `export/animal_vision.glsl`; `VisionShadersTest` fails if the export changes.
  */
 internal object VisionShaders {
     enum class Variant(val oesSource: Boolean, val blur: Boolean, val colourOut: Boolean) {
@@ -29,6 +29,19 @@ vec3 srgbToLinear(vec3 c) {
 
 vec3 linearToSrgb(vec3 c) {
     return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c));
+}
+""".trim()
+
+    /** The optional night-boost shadow lift (artistic, see `LowLight.md`); gamma 1.0 is off. */
+    val SHADOW_LIFT_FUNCTIONS = """
+const vec3 LUMA = vec3(0.2126729, 0.7151522, 0.072175); // linear-light luminance weights
+
+// Shadow lift (artistic, optional): luminance gamma that keeps colour ratios; gamma 1.0 is off.
+// Applied to linear light after the blur and before the matrix.
+vec3 shadowLift(vec3 rgb, float gamma) {
+    float y = clamp(dot(LUMA, rgb), 1.0e-6, 1.0);
+    float peak = max(max(rgb.r, rgb.g), max(rgb.b, 1.0e-6));
+    return rgb * min(pow(y, gamma - 1.0), max(1.0 / peak, 1.0));
 }
 """.trim()
 
@@ -66,8 +79,11 @@ uniform mat3 uColorMatrix;
 uniform vec2 uStep;
 uniform float uSigma;
 uniform float uSplit; // output-space x of the divider; left of it stays unfiltered
+uniform float uShadowGamma; // night boost: luminance gamma, 1.0 = off
 
 $COLOUR_FUNCTIONS
+
+$SHADOW_LIFT_FUNCTIONS
 
 // Linear-light colour at output-space uv; clamp-to-edge at the frame border.
 vec3 fetchLinear(vec2 uv) {
@@ -110,7 +126,7 @@ void main() {
     vec3 linear = fetchLinear(vUv);
 #endif
 #ifdef COLOUR_OUT
-    vec3 shown = vUv.x < uSplit ? linear : uColorMatrix * linear;
+    vec3 shown = vUv.x < uSplit ? linear : uColorMatrix * shadowLift(linear, uShadowGamma);
     gl_FragColor = vec4(linearToSrgb(clamp(shown, 0.0, 1.0)), 1.0);
 #else
     gl_FragColor = vec4(linear, 1.0);

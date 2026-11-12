@@ -63,6 +63,7 @@ internal class VisionRenderer {
         val colourMatrix = profile?.linearMatrixColumnMajor() ?: IDENTITY_3
         val sigma = blurSigma(settings, width, height)
         val split = settings.split.coerceIn(0f, 1f)
+        val shadowGamma = if (profile == null) 1f else (settings.shadowGamma ?: 1f).coerceIn(MIN_SHADOW_GAMMA, 1f)
 
         GLES20.glViewport(0, 0, width, height)
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, quad)
@@ -70,13 +71,13 @@ internal class VisionRenderer {
         if (sigma > MIN_SIGMA_PX && ensureBlurTarget(width, height)) {
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, blurFramebuffer)
             GLES20.glViewport(0, 0, width, height)
-            drawPass(blurHorizontal, GLES11Ext.GL_TEXTURE_EXTERNAL_OES, cameraTextureId, texMatrix, colourMatrix, 1f / width, 0f, sigma, split)
+            drawPass(blurHorizontal, GLES11Ext.GL_TEXTURE_EXTERNAL_OES, cameraTextureId, texMatrix, colourMatrix, 1f / width, 0f, sigma, split, shadowGamma)
 
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
-            drawPass(blurVertical, GLES20.GL_TEXTURE_2D, blurTexture, IDENTITY_4, colourMatrix, 0f, 1f / height, sigma, split)
+            drawPass(blurVertical, GLES20.GL_TEXTURE_2D, blurTexture, IDENTITY_4, colourMatrix, 0f, 1f / height, sigma, split, shadowGamma)
         } else {
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
-            drawPass(colour, GLES11Ext.GL_TEXTURE_EXTERNAL_OES, cameraTextureId, texMatrix, colourMatrix, 0f, 0f, 0f, split)
+            drawPass(colour, GLES11Ext.GL_TEXTURE_EXTERNAL_OES, cameraTextureId, texMatrix, colourMatrix, 0f, 0f, 0f, split, shadowGamma)
         }
     }
 
@@ -105,6 +106,7 @@ internal class VisionRenderer {
         stepY: Float,
         sigma: Float,
         split: Float,
+        shadowGamma: Float,
     ) {
         program.use()
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
@@ -115,6 +117,7 @@ internal class VisionRenderer {
         GLES20.glUniform2f(program.uniform("uStep"), stepX, stepY)
         GLES20.glUniform1f(program.uniform("uSigma"), sigma)
         GLES20.glUniform1f(program.uniform("uSplit"), split)
+        GLES20.glUniform1f(program.uniform("uShadowGamma"), shadowGamma)
 
         val position = program.attribute("aPosition")
         GLES20.glEnableVertexAttribArray(position)
@@ -173,6 +176,9 @@ internal class VisionRenderer {
     private companion object {
         /** Below this the blur changes nothing visible; skip the two extra passes. */
         const val MIN_SIGMA_PX = 0.2f
+
+        /** The lift is only tuned down to this gamma (`LowLight.md`); a smaller one would look hazy. */
+        const val MIN_SHADOW_GAMMA = 0.5f
 
         val IDENTITY_3 = floatArrayOf(1f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 1f)
         val IDENTITY_4 = FloatArray(16).also { Matrix.setIdentityM(it, 0) }
