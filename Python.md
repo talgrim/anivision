@@ -210,6 +210,6 @@ Then update `Android.md` Phases 3-4 to point at these files.
 2. Which photos should be used as test material? Your own, or public-domain images?
    *Resolved:* 10 CC0 photos from Wikimedia Commons (`samples/SOURCES.md`).
 3. Should the cat profile (S ~450 nm, L/M ~555 nm) be derived now, since the pipeline makes it nearly free, or deferred?
-   *Resolved:* deferred; `profiles.py` has only the dog.
+   *Resolved:* derived (`--variant cat`, S 450 / L 555 nm, acuity ratio 3.5, i.e. ~8.5 cycles/degree). The cat numbers are approximate and not verified against primary papers; the cat matrix is very close to the dog's, so the two views differ only slightly.
 4. Do you want the lens-transmission refinement in v1, or only if V2 vs V0 differences look significant?
    *Resolved:* deferred.

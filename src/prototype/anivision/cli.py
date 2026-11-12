@@ -1,4 +1,4 @@
-"""Command line: ``python -m anivision in.jpg out.jpg [--variant v0|v1|v2]`` (default v2)."""
+"""Command line: ``python -m anivision in.jpg out.jpg [--variant v0|v1|v2|cat]`` (default v2)."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from PIL import Image, ImageOps
 from .acuity import DEFAULT_EXAGGERATION, MAX_EXAGGERATION, AcuityParams
 from .gamut import GAMUT_POLICIES
 from .simulate import simulate
-from .variants import VARIANT_IDS, get_variant
+from .variants import VARIANT_IDS, acuity_ratio_for, get_variant
 
 
 def load_rgb(path: str) -> np.ndarray:
@@ -29,8 +29,8 @@ def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="python -m anivision",
         description=(
-            "Simulate what a dog's cones capture. This is an approximation, "
-            "not what a dog subjectively experiences."
+            "Simulate what a dog's or cat's cones capture. This is an approximation, "
+            "not what the animal subjectively experiences."
         ),
     )
     p.add_argument("input", help="input image")
@@ -41,7 +41,7 @@ def build_parser() -> argparse.ArgumentParser:
         choices=list(VARIANT_IDS),
         help="colour transform variant (default: %(default)s)",
     )
-    p.add_argument("--acuity", action="store_true", help="also apply the dog acuity blur")
+    p.add_argument("--acuity", action="store_true", help="also apply the animal's acuity blur")
     p.add_argument(
         "--exaggeration",
         type=float,
@@ -50,7 +50,12 @@ def build_parser() -> argparse.ArgumentParser:
         f"suggested maximum {MAX_EXAGGERATION:g})",
     )
     p.add_argument("--hfov", type=float, default=70.0, help="camera field of view along the long edge, degrees")
-    p.add_argument("--acuity-ratio", type=float, default=3.75, help="dog/human acuity ratio (20/75 -> 3.75)")
+    p.add_argument(
+        "--acuity-ratio",
+        type=float,
+        default=None,
+        help="animal/human acuity ratio (dog 20/75 -> 3.75); default: the chosen variant's animal",
+    )
     p.add_argument(
         "--gamut",
         default="clip",
@@ -81,9 +86,8 @@ def main(argv: list[str] | None = None) -> int:
     except OSError as exc:  # unreadable file or a format Pillow cannot identify
         parser.error(f"cannot read {args.input} as an image: {exc}")
     try:
-        acuity = (
-            AcuityParams(args.acuity_ratio, args.hfov, args.exaggeration) if args.acuity else None
-        )
+        ratio = args.acuity_ratio if args.acuity_ratio is not None else acuity_ratio_for(args.variant)
+        acuity = AcuityParams(ratio, args.hfov, args.exaggeration) if args.acuity else None
         result = simulate(
             image,
             matrix,

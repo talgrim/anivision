@@ -26,23 +26,38 @@ DEUTERANOPIA_VIENOT_1999 = np.array(
 )
 
 from .derive import derive  # noqa: E402  (after V0 so the module reads top-down)
+from .profiles import CAT, DOG, Profile  # noqa: E402
 
 # V2: dog-specific derivation from cone sensitivities (475 nm anchor, default
 # Gaussian primaries). See derive.py.
 DOG_V2 = derive().matrix.copy()
 
+# CAT: the same derivation (475 nm anchor, default primaries) with the cat's cone peaks.
+CAT_V2 = derive(CAT).matrix.copy()
+
 # The matrices are shared module state: make them read-only so a caller cannot change what every
 # later simulate() uses.
 DEUTERANOPIA_VIENOT_1999.flags.writeable = False
 DOG_V2.flags.writeable = False
+CAT_V2.flags.writeable = False
 
 VARIANTS: dict[str, np.ndarray] = {
     "v0": DEUTERANOPIA_VIENOT_1999,
     "v2": DOG_V2,
+    "cat": CAT_V2,
 }
 
 # Every id get_variant() understands. V1 is optional: it needs colour-science.
-VARIANT_IDS = ("v0", "v1", "v2")
+VARIANT_IDS = ("v0", "v1", "v2", "cat")
+
+# The animal whose acuity goes with each variant. V0 and V1 model a human deuteranope and have
+# always been paired with the dog's acuity.
+VARIANT_PROFILES: dict[str, Profile] = {"v0": DOG, "v1": DOG, "v2": DOG, "cat": CAT}
+
+
+def acuity_ratio_for(variant: str) -> float:
+    """The acuity ratio that goes with a variant id (case-insensitive)."""
+    return VARIANT_PROFILES[variant.lower()].acuity_ratio
 
 
 @functools.cache
