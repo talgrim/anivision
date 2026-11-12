@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "caveat": "Approximation of what a dog's cones capture, not of what a dog subjectively experiences. Assumes sRGB input and a modelled display (Gaussian primaries); see src/prototype/README.md.",
+  "caveat": "Approximation of what a dog's or cat's cones capture, not of what the animal subjectively experiences. Assumes sRGB input and a modelled display (Gaussian primaries); see src/prototype/README.md.",
   "generator": {
     "script": "src/prototype/scripts/export_constants.py",
-    "git_commit": "3a42986f9e07a3a927013d606eb9f98c30dad7dd",
-    "git_dirty": true
+    "git_commit": "5a858e5e0a769843c5e4b1546cc3f765322dc1b2",
+    "git_dirty": false
   },
   "convention": {
     "space": "linear sRGB (D65), matrix acts on column vectors: out = M @ rgb",
@@ -27,6 +27,7 @@
   "profiles": {
     "dog": {
       "default_variant": "v2",
+      "acuity_ratio": 3.75,
       "variants": {
         "v2": {
           "description": "Dog-specific projection derived from Govardovskii cone sensitivities (S 429 / L 555 nm), 475 nm anchor. Shipped default (NOTES.md, Phase 3 decision).",
@@ -51,6 +52,28 @@
             [0.29275, 0.70725, 0.0],
             [-0.02234, 0.02234, 1.0]
           ]
+        }
+      }
+    },
+    "cat": {
+      "default_variant": "cat",
+      "acuity_ratio": 3.5,
+      "variants": {
+        "cat": {
+          "description": "Cat-specific projection derived from Govardovskii cone sensitivities (S 450 / L 555 nm), 475 nm anchor. Approximate: the cat parameters are not verified against primary papers.",
+          "matrix": [
+            [0.32865443975266473, 0.9032266874388557, -0.2318811271915204],
+            [0.24255416733507243, 0.673668211932713, 0.0837776207322145],
+            [-0.0067245744225294495, 0.009047226107907355, 0.9976773483146221]
+          ],
+          "derivation": {
+            "s_peak_nm": 450.0,
+            "l_peak_nm": 555.0,
+            "anchor_nm": 475.0,
+            "display_primary_centers_nm": [610.0, 550.0, 465.0],
+            "display_primary_sigma_nm": 20.0,
+            "neutral_point_nm": 499.1777918313522
+          }
         }
       }
     }
