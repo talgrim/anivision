@@ -250,8 +250,9 @@ take the matrix as data so the default can change without a code change.
 ## Phase 4: acuity, gamut policy and shadow lift (2026-11-12)
 
 Pipeline order in `simulate()`: decode sRGB -> linear, **acuity blur**, **shadow lift**,
-colour matrix, gamut fit, encode. The first three are linear (or a per-pixel scale), so they
-commute with the matrix and nothing is clipped before the blur.
+colour matrix, gamut fit, encode. Nothing is clipped before the blur. The blur is linear and
+commutes with the matrix; the shadow lift is a per-pixel scale computed from the input luminance,
+so its position before the matrix matters.
 
 ### Acuity blur (`anivision/acuity.py`, `scripts/acuity_sweep.py`)
 
@@ -318,7 +319,9 @@ Android shader should simply clamp each channel.
 ### Shadow lift (`anivision/lowlight.py`, `scripts/lowlight_sweep.py`)
 
 Artistic, not physiological, and off by default. A gamma on luminance that keeps colour ratios
-(`rgb * Y^(gamma-1)`), so hue and saturation are unchanged and black stays black. By eye on dark
+(`rgb * min(Y^(gamma-1), 1/max(r,g,b))`), so hue and saturation are unchanged and black stays
+black. The cap was added after a review: without it pure blue at gamma 0.85 scaled to 1.48 (2.2 at
+0.7) and was clipped after the matrix, shifting its hue. By eye on dark
 and mid-tone photos: gamma 0.85 opens up shadows naturally, 0.7 is the strongest lift before the
 blacks look veiled, 0.55 is hazy. **Suggested 0.85, strongest 0.7.**
 

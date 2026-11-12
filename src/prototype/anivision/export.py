@@ -173,7 +173,8 @@ def acuity_document() -> dict:
     return {
         "enabled_by_default": False,  # the app shows a switch, off by default
         "blur_space": "linear light",
-        "edges": "mirror",
+        "edges": "mirror preferred; clamp-to-edge is acceptable where mirroring is unavailable "
+        "(external camera textures may only support clamp)",
         "kernel": "Gaussian, isotropic; truncate at 3 sigma or more",
         "formula": {
             "cutoff_cpd": "human_cutoff_cpd / acuity_ratio",
@@ -208,7 +209,8 @@ def shadow_lift_document() -> dict:
     return {
         "enabled_by_default": False,
         "artistic": True,
-        "formula": "rgb * Y^(gamma - 1) where Y = clamp(dot(luma, rgb), 1e-6, 1); unchanged when Y >= 1",
+        "formula": "rgb * min(Y^(gamma - 1), max(1, 1 / max(r, g, b))) where Y = clamp(dot(luma, rgb), 1e-6, 1); "
+        "scale is 1 when Y >= 1; the cap keeps every channel at or below 1",
         "luma": [float(v) for v in LUMA],
         "off_gamma": 1.0,
         "suggested_gamma": SUGGESTED_GAMMA,
@@ -253,7 +255,8 @@ def kotlin_snippet(generator: dict) -> str:
         "/** Gaussian sigma in pixels for a frame whose long edge is [longEdgePx] pixels. */\n"
         "fun acuitySigmaPx(longEdgePx: Float, exaggeration: Float = ACUITY_DEFAULT_EXAGGERATION): Float =\n"
         "    ACUITY_K * (ACUITY_RATIO / 60f / 2f) * (longEdgePx / ACUITY_HFOV_DEG) * exaggeration\n\n"
-        "// Shadow lift (artistic, off by default): rgb *= Y^(gamma - 1), Y = luma(rgb) clamped to [1e-6, 1].\n"
+        "// Shadow lift (artistic, off by default): rgb *= min(Y^(gamma - 1), max(1, 1 / max(r, g, b))),\n"
+        "// Y = luma(rgb) clamped to [1e-6, 1], scale 1 when Y >= 1; the cap keeps channels at or below 1.\n"
         f"const val SHADOW_LIFT_OFF_GAMMA = {s['off_gamma']:.9g}f\n"
         f"const val SHADOW_LIFT_SUGGESTED_GAMMA = {s['suggested_gamma']:.9g}f\n"
         f"const val SHADOW_LIFT_STRONGEST_GAMMA = {s['strongest_gamma']:.9g}f\n"

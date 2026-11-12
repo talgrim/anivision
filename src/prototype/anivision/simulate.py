@@ -2,8 +2,9 @@
 
 Pipeline: decode sRGB -> linear, [acuity blur], [shadow lift], multiply by the matrix, fit to
 the display gamut (counting out-of-gamut pixels first), re-encode to sRGB. The bracketed steps
-are optional and run before the matrix: they are linear (or a per-pixel scale), so they commute
-with it and nothing is clipped before the blur.
+are optional and run before the matrix, so nothing is clipped before the blur. The blur is linear
+and commutes with the matrix; the shadow lift is a per-pixel scale computed from the input
+luminance, so its position before the matrix matters.
 """
 
 from __future__ import annotations
