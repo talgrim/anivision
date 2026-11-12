@@ -168,6 +168,8 @@ def _profile_document(exported: ExportedProfile) -> dict:
     return {
         "default_variant": exported.default_variant,
         "acuity_ratio": exported.profile.acuity_ratio,
+        "shadow_gamma": exported.profile.shadow_gamma,
+        "peripheral_blur": exported.profile.peripheral_blur,
         "variants": variants,
     }
 
@@ -218,6 +220,15 @@ def acuity_document() -> dict:
         "acuity_ratio": defaults.acuity_ratio,
         "hfov_deg": defaults.hfov_deg,
         "hfov_applies_to": "the long edge of the frame",
+        "peripheral_blur": {
+            "note": "artistic; per-profile 'peripheral_blur' (0 = uniform blur). Blur grows towards the "
+            "frame edges, the way acuity falls away from the centre of the retina",
+            "formula": "sigma_local = sigma_px * (1 + peripheral_blur * r2)",
+            "r2": "((x - cx)^2 + (y - cy)^2) / (cx^2 + cy^2), pixel centres, cx = (width - 1) / 2, "
+            "cy = (height - 1) / 2: 0 at the frame centre, 1 in the corners",
+            "reference_implementation": "acuity.peripheral_blur blends 5 uniform Gaussian blurs evenly "
+            "spaced in r2 with linear weights; a shader may evaluate the Gaussian per pixel instead",
+        },
         "default_exaggeration": DEFAULT_EXAGGERATION,
         "max_exaggeration": MAX_EXAGGERATION,
         "sigma_px_examples": [
@@ -243,6 +254,8 @@ def shadow_lift_document() -> dict:
         "formula": "rgb * min(Y^(gamma - 1), max(1, 1 / max(r, g, b))) where Y = clamp(dot(luma, rgb), 1e-6, 1); "
         "scale is 1 when Y >= 1; the cap keeps every channel at or below 1",
         "luma": [float(v) for v in LUMA],
+        "inherent": "a profile's 'shadow_gamma' (1 = none) is always applied to that animal's view; "
+        "the effective gamma is min(user gamma, shadow_gamma), i.e. the stronger lift, never stacked",
         "off_gamma": 1.0,
         "suggested_gamma": SUGGESTED_GAMMA,
         "strongest_gamma": STRONGEST_GAMMA,
@@ -283,6 +296,8 @@ def kotlin_snippet(generator: dict) -> str:
         f"const val ACUITY_HFOV_DEG = {a['hfov_deg']:.9g}f  // along the frame's long edge\n"
         + "".join(
             f"const val {animal.upper()}_ACUITY_RATIO = {ep.profile.acuity_ratio:.9g}f\n"
+            f"const val {animal.upper()}_PERIPHERAL_BLUR = {ep.profile.peripheral_blur:.9g}f\n"
+            f"const val {animal.upper()}_SHADOW_GAMMA = {ep.profile.shadow_gamma:.9g}f\n"
             for animal, ep in EXPORT_PROFILES.items()
         )
         + f"const val ACUITY_DEFAULT_EXAGGERATION = {a['default_exaggeration']:.9g}f\n"

@@ -90,10 +90,20 @@ Properties:
 - Parameters: `acuity_ratio` (default 3.75), `hfov_deg` (default ~70 for a phone main camera), and `exaggeration` (default 1).
 - **Expect the effect to be subtle**, only a pixel or two on a typical photo, because the photo is already resolution-limited. The Android slider will need an exaggeration range, and this prototype should find a sensible one.
 - Blur in **linear** RGB.
+- **Peripheral blur (cat only, artistic):** `periphery` makes the blur grow towards the frame edges,
+  `sigma(r) = sigma · (1 + periphery · r²)`, with `r` the distance from the centre over half the
+  diagonal. The cat profile uses 1.0 (blur doubles in the corners); the dog uses 0. The value has no
+  source, and `--no-traits` or `--periphery 0` switches it off.
+- The cat's acuity ratio is 3.5 (about 8.5 cycles/degree), close to the dog's 3.75, so the cat's
+  uniform blur is nearly the dog's.
 
 ### Low-light lift (optional, last)
 
 A mild shadow lift, e.g. a gamma on luminance. Mark as artistic, not physiological.
+
+A profile can carry an **inherent** lift (`Profile.shadow_gamma`, 1.0 = none). The cat has 0.85, the
+suggested value, as a stand-in for its better dim-light vision (tapetum lucidum); the dog has none.
+The user's `--shadow-lift` does not stack with it: the stronger (smaller) gamma wins.
 
 Design, limits and the Android port are in `LowLight.md`.
 
@@ -210,6 +220,6 @@ Then update `Android.md` Phases 3-4 to point at these files.
 2. Which photos should be used as test material? Your own, or public-domain images?
    *Resolved:* 10 CC0 photos from Wikimedia Commons (`samples/SOURCES.md`).
 3. Should the cat profile (S ~450 nm, L/M ~555 nm) be derived now, since the pipeline makes it nearly free, or deferred?
-   *Resolved:* derived (`--variant cat`, S 450 / L 555 nm, acuity ratio 3.5, i.e. ~8.5 cycles/degree). The cat numbers are approximate and not verified against primary papers; the cat matrix is very close to the dog's, so the two views differ only slightly.
+   *Resolved:* derived (`--variant cat`, S 450 / L 555 nm, acuity ratio 3.5, i.e. ~8.5 cycles/degree). The cat numbers are approximate and not verified against primary papers; the cat matrix and uniform blur are very close to the dog's, so the colour and blur views of the two are nearly the same. The cat therefore also gets two artistic traits, a built-in shadow lift (gamma 0.85) and peripheral blur (see "Acuity blur" and "Low-light lift"); neither has a source.
 4. Do you want the lens-transmission refinement in v1, or only if V2 vs V0 differences look significant?
    *Resolved:* deferred.

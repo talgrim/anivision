@@ -55,9 +55,14 @@ VARIANT_IDS = ("v0", "v1", "v2", "cat")
 VARIANT_PROFILES: dict[str, Profile] = {"v0": DOG, "v1": DOG, "v2": DOG, "cat": CAT}
 
 
+def profile_for(variant: str) -> Profile:
+    """The animal profile that goes with a variant id (case-insensitive)."""
+    return VARIANT_PROFILES[variant.lower()]
+
+
 def acuity_ratio_for(variant: str) -> float:
     """The acuity ratio that goes with a variant id (case-insensitive)."""
-    return VARIANT_PROFILES[variant.lower()].acuity_ratio
+    return profile_for(variant).acuity_ratio
 
 
 @functools.cache

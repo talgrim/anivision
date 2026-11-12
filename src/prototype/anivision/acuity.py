@@ -40,9 +40,18 @@ class AcuityParams:
     hfov_deg: float = 70.0  # field of view along the long edge (phone main camera)
     exaggeration: float = DEFAULT_EXAGGERATION  # multiplier on the physical sigma
     k: float = DEFAULT_K
+    # Artistic: extra blur towards the frame edges, sigma(r) = sigma * (1 + periphery * r^2) with r
+    # the distance from the centre over half the diagonal. 0 = the same blur everywhere.
+    periphery: float = 0.0
 
     def __post_init__(self) -> None:
-        if self.acuity_ratio <= 0 or self.hfov_deg <= 0 or self.exaggeration < 0 or self.k <= 0:
+        if (
+            self.acuity_ratio <= 0
+            or self.hfov_deg <= 0
+            or self.exaggeration < 0
+            or self.k <= 0
+            or self.periphery < 0
+        ):
             raise ValueError(f"invalid acuity parameters: {self}")
 
     @property
@@ -83,10 +92,44 @@ def gaussian_blur(img: np.ndarray, sigma: float) -> np.ndarray:
     return out[pad : pad + arr.shape[0], pad : pad + arr.shape[1]]
 
 
+PERIPHERY_LEVELS = 5  # blur strengths blended across the radius
+
+
+def radius_squared(height: int, width: int) -> np.ndarray:
+    """``r^2`` per pixel: 0 at the frame centre, 1 in the corners (``(H, W)``)."""
+    y = (np.arange(height) - (height - 1) / 2.0)[:, None]
+    x = (np.arange(width) - (width - 1) / 2.0)[None, :]
+    corner = max(((height - 1) / 2.0) ** 2 + ((width - 1) / 2.0) ** 2, 1e-12)
+    return (x**2 + y**2) / corner
+
+
+def peripheral_blur(
+    img: np.ndarray, sigma: float, periphery: float, levels: int = PERIPHERY_LEVELS
+) -> np.ndarray:
+    """Blur whose sigma grows from ``sigma`` at the centre to ``sigma * (1 + periphery)`` in the corners.
+
+    ``sigma(r) = sigma * (1 + periphery * r^2)``. It blends ``levels`` uniform Gaussian blurs
+    (evenly spaced in ``r^2``) with linear weights, so ``periphery = 0`` equals ``gaussian_blur``.
+    """
+    arr = np.asarray(img, dtype=np.float64)
+    if periphery <= 0.0 or sigma <= 0.0:
+        return gaussian_blur(arr, sigma)
+    if levels < 2:
+        raise ValueError(f"levels must be at least 2, got {levels}")
+    position = radius_squared(arr.shape[0], arr.shape[1]) * (levels - 1)
+    out = np.zeros_like(arr)
+    for k in range(levels):
+        weight = np.clip(1.0 - np.abs(position - k), 0.0, 1.0)
+        if not weight.any():
+            continue
+        out += weight[..., None] * gaussian_blur(arr, sigma * (1.0 + periphery * k / (levels - 1)))
+    return out
+
+
 def blur_for_image(
     linear_rgb: np.ndarray, params: AcuityParams = AcuityParams()
 ) -> tuple[np.ndarray, float]:
-    """Blur linear RGB with the acuity recipe; returns ``(blurred, sigma_px)``."""
+    """Blur linear RGB with the acuity recipe; returns ``(blurred, sigma_px)`` (the centre sigma)."""
     long_edge = max(linear_rgb.shape[0], linear_rgb.shape[1])
     s = sigma_px(long_edge, params)
-    return gaussian_blur(linear_rgb, s), s
+    return peripheral_blur(linear_rgb, s, params.periphery), s
