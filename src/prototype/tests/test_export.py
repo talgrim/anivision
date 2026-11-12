@@ -9,6 +9,8 @@ import pytest
 
 from anivision.acuity import AcuityParams, sigma_px
 from anivision.colorspace import linear_to_srgb
+from anivision.gamut import LUMA
+from anivision.lowlight import STRONGEST_GAMMA, SUGGESTED_GAMMA
 from anivision.export import (
     DEFAULT_VARIANT,
     EXPORT_VARIANTS,
@@ -112,6 +114,59 @@ def test_golden_vectors_cover_the_required_cases():
         for name in EXPORT_VARIANTS:
             assert max(abs(a - b) for a, b in zip(v[name]["srgb"], v["srgb"])) <= 1  # grays stay put
     assert any(v["v2"]["clipped"] for v in vecs) and any(not v["v2"]["clipped"] for v in vecs)
+
+
+def _shadow_lift_f32(lin: np.ndarray, luma: np.ndarray, gamma: float) -> np.ndarray:
+    """The GLSL shadowLift() written out in float32."""
+    f = np.float32
+    y = np.clip(lin @ luma, f(1e-6), f(1.0))[..., None]
+    peak = np.maximum(lin.max(axis=-1, keepdims=True), f(1e-6))
+    return lin * np.minimum(y ** f(gamma - 1.0), np.maximum(f(1.0) / peak, f(1.0)))
+
+
+def _glsl_luma(snippet: str) -> np.ndarray:
+    body = re.search(r"const vec3 LUMA = vec3\(([^)]*)\);", snippet)
+    assert body, "LUMA not found"
+    return np.array(_floats(body.group(1)), dtype=np.float32)
+
+
+def test_glsl_exports_the_shadow_lift():
+    glsl = glsl_snippet(GEN)
+    assert "vec3 shadowLift(vec3 rgb, float gamma)" in glsl
+    np.testing.assert_allclose(_glsl_luma(glsl), LUMA, rtol=1e-6)
+
+
+def test_shader_shadow_lift_reproduces_golden_vectors():
+    glsl = glsl_snippet(GEN)
+    doc = golden_document(GEN)
+    lift = doc["shadow_lift_vectors"]
+    m = _glsl_matrix(glsl, f"DOG_{lift['variant'].upper()}").astype(np.float32)
+    luma = _glsl_luma(glsl)
+    inputs = np.array([v["srgb"] for v in doc["vectors"]], dtype=np.float32)
+    c = inputs / np.float32(255)
+    lin = np.where(c <= 0.04045, c / np.float32(12.92), ((c + np.float32(0.055)) / np.float32(1.055)) ** np.float32(2.4))
+    lin = lin.astype(np.float32)
+    assert [g["gamma"] for g in lift["gammas"]] == [SUGGESTED_GAMMA, STRONGEST_GAMMA]
+    for entry in lift["gammas"]:
+        out = np.clip(_shadow_lift_f32(lin, luma, entry["gamma"]) @ m.T, 0.0, 1.0)
+        enc = np.where(out <= 0.0031308, out * np.float32(12.92), np.float32(1.055) * out ** np.float32(1 / 2.4) - np.float32(0.055))
+        got = np.rint(enc * np.float32(255)).astype(np.int32)
+        assert np.abs(got - np.array(entry["srgb"])).max() <= doc["tolerance_8bit"]["recommended"]
+
+
+def test_shadow_lift_vectors_are_aligned_and_brighten_the_dark_ones():
+    doc = golden_document(GEN)
+    vecs = doc["vectors"]
+    strongest = doc["shadow_lift_vectors"]["gammas"][1]["srgb"]
+    for entry in doc["shadow_lift_vectors"]["gammas"]:
+        assert len(entry["srgb"]) == len(vecs)
+        assert all(0 <= c <= 255 for px in entry["srgb"] for c in px)
+    by_label = {v["label"]: (v, out) for v, out in zip(vecs, strongest)}
+    black, black_out = by_label["black"]
+    white, white_out = by_label["white"]
+    assert black_out == black["v2"]["srgb"] and white_out == white["v2"]["srgb"]
+    dark, dark_out = by_label["gray-32"]
+    assert sum(dark_out) > sum(dark["v2"]["srgb"])
 
 
 def test_golden_vectors_are_deterministic():
