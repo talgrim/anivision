@@ -1,0 +1,184 @@
+# Anivision: Android Scaffolding Plan
+
+## 1. Context
+
+**Goal:** An Android app that shows the live camera view as a dog would see it, i.e. with canine color vision. Photo/video capture and other animals (cat, etc.) come later.
+
+**Why Android first:** Building for iOS needs a Mac and Xcode (the paid Apple Developer Program is only needed to distribute or to run on-device beyond 7 days). Android needs neither. A one-time $25 Google Play fee applies only at publishing time.
+
+### What we are simulating
+
+Dogs are **dichromats**. They have two cone types:
+
+| Cone | Peak | Human equivalent |
+|---|---|---|
+| S | ~429-435 nm (blue-violet) | S (~420 nm) |
+| L/M | ~555 nm (yellow-green) | closest to L (~560 nm) |
+
+This makes canine vision close to human **deuteranopia**:
+
+- Blues and yellows are distinguishable.
+- Reds, oranges and greens collapse into yellowish, brownish or gray tones.
+- The neutral point (a wavelength that looks gray) is around 480 nm.
+
+Optional realism extras:
+
+- **Lower acuity** (~20/75): apply a mild blur.
+- **Better low-light sensitivity** (tapetum lucidum): slightly lift shadows.
+
+Nobody knows what dogs subjectively experience. The app simulates the information their cones capture, so UI copy should say "approximation of a dog's color vision".
+
+### The color transform
+
+1. sRGB to linear RGB.
+2. Linear RGB to LMS (Hunt-Pointer-Estevez or Viénot).
+3. Project onto the dichromat plane (replace the missing cone's signal with a combination of the others).
+4. LMS back to linear RGB, then re-encode to sRGB.
+
+Steps 2-4 collapse into one 3x3 matrix applied in linear RGB. A starting point is the standard deuteranopia matrix (gamma-space approximation):
+
+```
+R' = 0.625 R + 0.375 G
+G' = 0.700 R + 0.300 G
+B' = 0.300 G + 0.700 B
+```
+
+The final matrix should be derived from canine cone sensitivities (peaks 429 / 555 nm, Govardovskii nomogram) against typical sRGB display primaries. This is validated in the Python prototype (see section 6).
+
+## 2. Decisions
+
+| Topic | Decision | Reason |
+|---|---|---|
+| Language / framework | Kotlin, native Android | Per-frame GPU image processing is the core of the app. Native gives the cleanest camera and GL access. |
+| UI | Jetpack Compose | Current default. `PreviewView` is embedded via `AndroidView`. |
+| Camera | CameraX (`camera-core`, `camera-camera2`, `camera-lifecycle`, `camera-view`; later `camera-video`, `camera-effects`) | Lifecycle-aware, handles device quirks. |
+| Processing | GPU (GLSL fragment shader). Not CPU pixel loops. | Real-time at 30 fps without draining the battery. |
+| minSdk | 26 | Covers nearly all active devices. Does not depend on the API 31 `RenderEffect`. |
+| targetSdk / compileSdk | Latest stable | Play Store requirement. |
+| Build | Gradle Kotlin DSL + version catalog (`libs.versions.toml`) | Android Studio default. |
+| Package / applicationId | `com.anivision.app` (**placeholder, confirm**) | Hard to change after publishing. |
+| VCS | Git, already initialized in this directory (`master`) | |
+
+Library versions are not pinned in this document. Use the latest stable releases from the Android Studio template and Google Maven when scaffolding, and record them in `libs.versions.toml`.
+
+## 3. Target project layout
+
+```
+anivision/
+├── Android.md                  # this file
+├── .gitignore
+├── README.md
+├── src/
+│   └── prototype/              # Python color-transform prototype (section 6)
+│       ├── anivision/          # package, run with `python -m anivision`
+│       ├── samples/
+│       └── requirements.txt
+└── android/                    # Android Studio project root
+    ├── settings.gradle.kts
+    ├── build.gradle.kts
+    ├── gradle/libs.versions.toml
+    └── app/
+        ├── build.gradle.kts
+        └── src/main/
+            ├── AndroidManifest.xml
+            ├── java/com/anivision/app/
+            │   ├── MainActivity.kt
+            │   ├── camera/        # CameraX setup, permission handling
+            │   ├── render/        # GL renderer / shader pipeline
+            │   ├── vision/        # AnimalVision profiles (matrix, blur, etc.)
+            │   └── ui/            # Compose screens and theme
+            ├── assets/shaders/    # *.glsl (vertex + fragment)
+            └── res/
+```
+
+The Android project lives in `android/` at the repo root, separate from `src/prototype/` and future docs, all in the same repo.
+
+## 4. Prerequisites (developer machine)
+
+This repo is on **WSL2**. Android Studio is best run on the Windows side, opening the project through `\\wsl$\...` or from a Windows-side clone. Gradle builds from WSL can be slow over the 9P boundary, so decide where to keep the working copy.
+
+Needed:
+
+- JDK 17 (bundled with Android Studio)
+- Android Studio (latest stable) with the SDK Platform, Build-Tools and Platform-Tools
+- A **physical Android device** with USB debugging. The emulator's virtual camera is poor for judging color, so real hardware is strongly preferred.
+- Python 3.10+ with `numpy`, `pillow` for the prototype
+
+## 5. Scaffolding steps
+
+### Phase 0: Repo hygiene
+1. Add `.gitignore` covering Android/Gradle (`.gradle/`, `build/`, `local.properties`, `.idea/`, `*.iml`, `captures/`, `.cxx/`), Python (`__pycache__/`, `.venv/`) and OS junk.
+2. Add a minimal `README.md` (what the app is, how to build).
+3. First commit.
+
+### Phase 1: Empty Android app
+1. In Android Studio: New Project, "Empty Activity" (Compose). Name `Anivision`, package `com.anivision.app`, minSdk 26, Kotlin DSL. Save it into `android/`.
+2. Confirm it builds and launches on the device ("Hello" screen).
+3. Commit.
+
+### Phase 2: Camera preview (no filter)
+1. Add CameraX dependencies to the version catalog and `app/build.gradle.kts`.
+2. Declare `<uses-permission android:name="android.permission.CAMERA"/>` and `<uses-feature android:name="android.hardware.camera" android:required="true"/>` in the manifest.
+3. Implement runtime permission request in Compose (with a rationale/denied state).
+4. Implement `CameraPreview` composable: `PreviewView` via `AndroidView`, bound to the lifecycle with `ProcessCameraProvider`, back camera, `Preview` use case.
+5. Verify a live, unfiltered preview on the device.
+6. Commit.
+
+### Phase 3: Quick MVP filter
+1. Create `vision/AnimalVision.kt`: a data class holding the 3x3 matrix (and later blur radius, brightness) plus a `DOG` profile using the deuteranopia starting matrix.
+2. Set `PreviewView` to `ImplementationMode.COMPATIBLE` (TextureView) and apply a `ColorMatrixColorFilter` via the view's layer paint (`setLayerType(LAYER_TYPE_HARDWARE, paint)`).
+3. Add a toggle: normal vs. dog view.
+4. Verify on-device against the Python prototype output. Color will be slightly off, since the matrix runs on gamma-encoded values. This is acceptable for the MVP.
+5. Commit.
+
+### Phase 4: Proper GPU pipeline
+1. Replace the color-filter hack with a CameraX `SurfaceProcessor` / `CameraEffect` (or a custom `GLSurfaceView` fed by a `SurfaceTexture`).
+2. Write the fragment shader using `samplerExternalOES`:
+   - sample camera texture
+   - linearize (sRGB to linear)
+   - multiply by the profile matrix (uniform `mat3`)
+   - optional separable blur (acuity) and brightness lift
+   - re-encode to sRGB
+3. Pass the `AnimalVision` profile as uniforms.
+4. Verify correct orientation, aspect ratio and no frame drops (target 30 fps).
+5. Commit.
+
+### Phase 5: Features
+- Side-by-side or draggable split-screen "normal | dog" comparison.
+- Sliders for blur (acuity) and low-light boost.
+- Photo capture with the effect baked in (`ImageCapture` plus effect), saved via MediaStore.
+- Video recording with the effect (`VideoCapture` plus effect).
+- Additional profiles (cat, etc.) behind a selector.
+- Gallery import: apply the filter to existing photos.
+
+### Phase 6: Polish and release prep
+- App icon, name, theme (light/dark).
+- About screen with the "approximation" disclaimer and short science notes.
+- Release build config (R8/minify, signing config kept out of git), privacy policy (camera use only, no data collected), Play Console listing.
+
+## 6. Python prototype (parallel track, do first)
+
+Before the shader work, validate the look on still photos:
+
+1. `src/prototype/anivision/` (`python -m anivision`): load an image, linearize, apply the transform, re-encode, save.
+2. Compute the matrix from cone sensitivity curves (peaks 429 / 555 nm) and compare with the stock deuteranopia matrix.
+3. Test with a handful of scenes: a red ball on green grass (the classic case), blue and yellow objects, a gray card, skin tones, sky.
+4. Export the final matrix as constants for `AnimalVision.kt` and the shader.
+
+## 7. Verification checklist
+
+- [ ] Project builds from a clean clone (`./gradlew assembleDebug`)
+- [ ] Camera permission flow works (grant, deny, deny permanently)
+- [ ] Live preview runs at about 30 fps with no visible stutter on a mid-range device
+- [ ] Red/green scenes collapse to yellow/brown as expected; blues and yellows stay distinct; grays stay neutral
+- [ ] Preview matches the Python prototype output within a small tolerance
+- [ ] Rotation, front/back camera and app backgrounding/resume don't crash
+- [ ] Captured photos/videos match what the preview showed (Phase 5)
+
+## 8. Open questions
+
+1. Final **applicationId / app name** (`com.anivision.app` is a placeholder).
+2. Where will the working copy live for Android Studio (Windows filesystem vs. WSL)?
+3. Which physical test device(s) are available?
+4. Is video recording in scope for v1, or photo only?
+5. Should other animals (cat, etc.) ship in v1 or stay as a later extension?
