@@ -46,6 +46,18 @@ class VisionProfilesMatchExportTest {
     }
 
     @Test
+    fun columnMajorMatrixIsTheTransposeOfTheExportedRows() {
+        val rowMajor = ExportFiles.dogMatrix("v2")
+        val columnMajor = AnimalVision.DOG_V2.linearMatrixColumnMajor()
+        assertEquals(9, columnMajor.size)
+        for (row in 0 until 3) {
+            for (col in 0 until 3) {
+                assertEquals("row $row col $col", rowMajor[row * 3 + col], columnMajor[col * 3 + row].toDouble(), 1e-6)
+            }
+        }
+    }
+
+    @Test
     fun linearMatrixIsADefensiveCopy() {
         val profile = AnimalVision.DOG_V2
         val first = profile.linearMatrix()
