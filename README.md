@@ -1,4 +1,4 @@
-# Anivision
+# AniVision
 
 An app that shows the live camera view approximately as a dog's colour vision would capture it.
 
@@ -11,7 +11,7 @@ An app that shows the live camera view approximately as a dog's colour vision wo
 | Part | Where | State |
 |---|---|---|
 | Python prototype (colour matrix, acuity blur, exports) | `src/prototype/` | Done, see `Python.md` |
-| Android app (Kotlin, Jetpack Compose, CameraX, GLSL) | `android/` | Not started, see `Android.md` |
+| Android app (Kotlin, Jetpack Compose, CameraX, GLSL) | `src/android/` | Empty Compose app generated, see `Android.md` |
 
 ## Repository layout
 
@@ -19,7 +19,7 @@ An app that shows the live camera view approximately as a dog's colour vision wo
 Android.md       Android scaffolding plan
 Python.md        Python prototype plan
 src/prototype/   Python prototype and the exported constants the app consumes (export/)
-android/         Android Studio project (planned)
+src/android/     Android Studio project
 ```
 
 ## Python prototype
@@ -38,15 +38,15 @@ More in `src/prototype/README.md`.
 ## Android app
 
 Planned stack: Kotlin, Jetpack Compose, CameraX, a GLSL fragment shader, minSdk 26.
-Build with Android Studio (latest stable, JDK 17 bundled) by opening `android/`, or from a
+Build with Android Studio (latest stable, JDK 17 bundled) by opening `src/android/`, or from a
 terminal:
 
 ```bash
-cd android
+cd src/android
 ./gradlew assembleDebug
 ```
 
-The `android/` project does not exist yet. A physical device with USB debugging is recommended,
+A physical device with USB debugging is recommended,
 because the emulator camera is poor for judging colour.
 
 ## Branches

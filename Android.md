@@ -1,4 +1,4 @@
-# Anivision: Android Scaffolding Plan
+# AniVision: Android Scaffolding Plan
 
 ## 1. Context
 
@@ -69,37 +69,37 @@ anivision/
 ├── Python.md                   # prototype plan (done)
 ├── .gitignore
 ├── README.md
-├── src/
-│   └── prototype/              # Python color-transform prototype (section 6, done)
-│       ├── anivision/          # package, run with `python -m anivision`
-│       ├── export/             # matrix, golden vectors, Kotlin and GLSL constants for the app
-│       ├── samples/
-│       ├── scripts/
-│       ├── tests/
-│       └── requirements.txt
-└── android/                    # Android Studio project root
-    ├── settings.gradle.kts
-    ├── build.gradle.kts
-    ├── gradle/libs.versions.toml
-    └── app/
+└── src/
+    ├── prototype/              # Python color-transform prototype (section 6, done)
+    │   ├── anivision/          # package, run with `python -m anivision`
+    │   ├── export/             # matrix, golden vectors, Kotlin and GLSL constants for the app
+    │   ├── samples/
+    │   ├── scripts/
+    │   ├── tests/
+    │   └── requirements.txt
+    └── android/                # Android Studio project root
+        ├── settings.gradle.kts
         ├── build.gradle.kts
-        └── src/main/
-            ├── AndroidManifest.xml
-            ├── java/com/anivision/app/
-            │   ├── MainActivity.kt
-            │   ├── camera/        # CameraX setup, permission handling
-            │   ├── render/        # GL renderer / shader pipeline
-            │   ├── vision/        # AnimalVision profiles (matrix, blur, etc.)
-            │   └── ui/            # Compose screens and theme
-            ├── assets/shaders/    # *.glsl (vertex + fragment)
-            └── res/
+        ├── gradle/libs.versions.toml
+        └── app/
+            ├── build.gradle.kts
+            └── src/main/
+                ├── AndroidManifest.xml
+                ├── java/com/anivision/app/
+                │   ├── MainActivity.kt
+                │   ├── camera/        # CameraX setup, permission handling
+                │   ├── render/        # GL renderer / shader pipeline
+                │   ├── vision/        # AnimalVision profiles (matrix, blur, etc.)
+                │   └── ui/            # Compose screens and theme
+                ├── assets/shaders/    # *.glsl (vertex + fragment)
+                └── res/
 ```
 
-The Android project lives in `android/` at the repo root, separate from `src/prototype/` and future docs, all in the same repo.
+The Android project lives in `src/android/`, next to `src/prototype/`, in the same repo. Git ignore rules live only in the root `.gitignore`; the project has no `.gitignore` files of its own.
 
 ## 4. Prerequisites (developer machine)
 
-The working copy is the current directory (`C:\Users\Shared\RiderProjects\anivision`, seen from WSL2 as `/mnt/c/Users/Shared/RiderProjects/anivision`). It lives on the Windows filesystem, so Android Studio opens `android/` directly and Gradle builds run on the Windows side. Use WSL for git, the Python prototype and file scaffolding.
+The working copy is the current directory (`C:\Users\Shared\RiderProjects\anivision`, seen from WSL2 as `/mnt/c/Users/Shared/RiderProjects/anivision`). It lives on the Windows filesystem, so Android Studio opens `src/android/` directly and Gradle builds run on the Windows side. Use WSL for git, the Python prototype and file scaffolding.
 
 Needed:
 
@@ -116,7 +116,7 @@ Needed:
 3. Commit on `feature/android-scaffold`.
 
 ### Phase 1: Empty Android app
-1. In Android Studio: New Project, "Empty Activity" (Compose). Name `Anivision`, package `com.anivision.app`, minSdk 26, Kotlin DSL. Save it into `android/`.
+1. In Android Studio: New Project, "Empty Activity" (Compose). Name `AniVision`, package `com.anivision.app`, minSdk 26, Kotlin DSL. Save it into `src/android/`.
 2. Confirm it builds and launches on the device ("Hello" screen).
 3. Commit.
 
