@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">AniVision</string>
+
+    <string name="camera_permission_title">Camera access</string>
+    <string name="camera_permission_message">AniVision uses the camera to show the live view as a dog\'s colour vision might capture it. Nothing is recorded, stored or sent anywhere.</string>
+    <string name="camera_permission_allow">Allow camera</string>
+
+    <string name="camera_denied_title">Camera access is needed</string>
+    <string name="camera_denied_message">Without the camera there is nothing to show. You can grant access and try again.</string>
+    <string name="camera_denied_retry">Try again</string>
+
+    <string name="camera_blocked_title">Camera access is blocked</string>
+    <string name="camera_blocked_message">Android will not ask again. Open the app settings, choose Permissions, then allow Camera.</string>
+    <string name="camera_blocked_open_settings">Open app settings</string>
+
+    <string name="mode_normal">Normal</string>
+    <string name="mode_dog">Dog</string>
+
+    <string name="camera_unavailable">The camera could not be started.</string>
+</resources>

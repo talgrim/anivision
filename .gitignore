@@ -1,5 +1,23 @@
 # IDE
 .idea/
+*.iml
+
+# Android / Gradle
+.gradle/
+build/
+local.properties
+captures/
+.cxx/
+.externalNativeBuild/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
 
 # Python
 .venv/
