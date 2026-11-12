@@ -8,6 +8,7 @@ build/
 local.properties
 captures/
 .cxx/
+.externalNativeBuild/
 *.apk
 *.aab
 *.keystore
