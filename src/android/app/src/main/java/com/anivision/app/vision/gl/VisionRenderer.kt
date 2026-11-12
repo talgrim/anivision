@@ -62,6 +62,7 @@ internal class VisionRenderer {
         val profile = settings.profile
         val colourMatrix = profile?.linearMatrixColumnMajor() ?: IDENTITY_3
         val sigma = blurSigma(settings, width, height)
+        val split = settings.split.coerceIn(0f, 1f)
 
         GLES20.glViewport(0, 0, width, height)
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, quad)
@@ -69,13 +70,13 @@ internal class VisionRenderer {
         if (sigma > MIN_SIGMA_PX && ensureBlurTarget(width, height)) {
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, blurFramebuffer)
             GLES20.glViewport(0, 0, width, height)
-            drawPass(blurHorizontal, GLES11Ext.GL_TEXTURE_EXTERNAL_OES, cameraTextureId, texMatrix, colourMatrix, 1f / width, 0f, sigma)
+            drawPass(blurHorizontal, GLES11Ext.GL_TEXTURE_EXTERNAL_OES, cameraTextureId, texMatrix, colourMatrix, 1f / width, 0f, sigma, split)
 
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
-            drawPass(blurVertical, GLES20.GL_TEXTURE_2D, blurTexture, IDENTITY_4, colourMatrix, 0f, 1f / height, sigma)
+            drawPass(blurVertical, GLES20.GL_TEXTURE_2D, blurTexture, IDENTITY_4, colourMatrix, 0f, 1f / height, sigma, split)
         } else {
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
-            drawPass(colour, GLES11Ext.GL_TEXTURE_EXTERNAL_OES, cameraTextureId, texMatrix, colourMatrix, 0f, 0f, 0f)
+            drawPass(colour, GLES11Ext.GL_TEXTURE_EXTERNAL_OES, cameraTextureId, texMatrix, colourMatrix, 0f, 0f, 0f, split)
         }
     }
 
@@ -103,6 +104,7 @@ internal class VisionRenderer {
         stepX: Float,
         stepY: Float,
         sigma: Float,
+        split: Float,
     ) {
         program.use()
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
@@ -112,6 +114,7 @@ internal class VisionRenderer {
         GLES20.glUniformMatrix3fv(program.uniform("uColorMatrix"), 1, false, colourMatrix, 0)
         GLES20.glUniform2f(program.uniform("uStep"), stepX, stepY)
         GLES20.glUniform1f(program.uniform("uSigma"), sigma)
+        GLES20.glUniform1f(program.uniform("uSplit"), split)
 
         val position = program.attribute("aPosition")
         GLES20.glEnableVertexAttribArray(position)
