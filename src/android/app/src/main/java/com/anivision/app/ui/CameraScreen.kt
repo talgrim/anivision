@@ -49,7 +49,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 /** Roughly the gallery button's width, mirrored on the shutter's other side. */
-private val GALLERY_BUTTON_BALANCE = 92.dp
+private val GALLERY_BUTTON_BALANCE = 48.dp
 
 /** The camera preview with its controls. The caller must hold the CAMERA permission. */
 @Composable
@@ -205,9 +205,15 @@ fun CameraScreen() {
         ) {
             if (mode != ViewMode.NORMAL) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    EffectSwitch(stringResource(R.string.blur_label), checked = blur, onCheckedChange = { blur = it })
-                    EffectSwitch(
-                        stringResource(R.string.night_boost_label),
+                    EffectToggle(
+                        icon = R.drawable.ic_blur,
+                        contentDescription = stringResource(R.string.blur_label),
+                        checked = blur,
+                        onCheckedChange = { blur = it },
+                    )
+                    EffectToggle(
+                        icon = R.drawable.ic_night,
+                        contentDescription = stringResource(R.string.night_boost_label),
                         checked = nightBoost,
                         onCheckedChange = { nightBoost = it },
                     )
