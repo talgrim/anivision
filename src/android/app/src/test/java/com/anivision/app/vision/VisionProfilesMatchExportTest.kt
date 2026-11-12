@@ -5,6 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VisionProfilesMatchExportTest {
@@ -52,6 +53,45 @@ class VisionProfilesMatchExportTest {
         assertNotSame(first, profile.linearMatrix())
         assertEquals(AnimalVision.DOG_V2.linearMatrix()[0], profile.linearMatrix()[0], 0f)
         assertEquals(0.325424108f, profile.linearMatrix()[0], 0f)
+    }
+
+    @Test
+    fun catV2MatchesMatrixJson() {
+        val expected = ExportFiles.profileMatrix("cat", "cat")
+        val actual = AnimalVision.CAT_V2.linearMatrix().map { it.toDouble() }.toDoubleArray()
+        assertArrayEquals("cat matrix", expected, actual, 1e-6)
+    }
+
+    @Test
+    fun catProfileIsTheExportedDefaultVariant() {
+        assertEquals(ExportFiles.defaultVariant("cat"), AnimalVision.CAT.id)
+        assertSame(AnimalVision.CAT_V2, AnimalVision.CAT)
+    }
+
+    @Test
+    fun profileTraitsMatchMatrixJson() {
+        for ((animal, profile) in mapOf("dog" to AnimalVision.DOG, "cat" to AnimalVision.CAT)) {
+            assertEquals("$animal acuity_ratio", ExportFiles.profileValue(animal, "acuity_ratio"), profile.acuityRatio.toDouble(), 1e-6)
+            assertEquals("$animal shadow_gamma", ExportFiles.profileValue(animal, "shadow_gamma"), profile.shadowGamma.toDouble(), 1e-6)
+            assertEquals("$animal peripheral_blur", ExportFiles.profileValue(animal, "peripheral_blur"), profile.peripheralBlur.toDouble(), 1e-6)
+        }
+    }
+
+    @Test
+    fun theDogHasNoBuiltInTraitsAndTheCatHas() {
+        assertEquals(1f, AnimalVision.DOG.shadowGamma, 0f)
+        assertEquals(0f, AnimalVision.DOG.peripheralBlur, 0f)
+        assertTrue(AnimalVision.CAT.shadowGamma < 1f)
+        assertTrue(AnimalVision.CAT.peripheralBlur > 0f)
+    }
+
+    @Test
+    fun rejectsInvalidTraits() {
+        val m = FloatArray(9)
+        assertThrows(IllegalArgumentException::class.java) { VisionProfile("bad", m, acuityRatio = 0f) }
+        assertThrows(IllegalArgumentException::class.java) { VisionProfile("bad", m, shadowGamma = 0f) }
+        assertThrows(IllegalArgumentException::class.java) { VisionProfile("bad", m, shadowGamma = 1.1f) }
+        assertThrows(IllegalArgumentException::class.java) { VisionProfile("bad", m, peripheralBlur = -0.1f) }
     }
 
     @Test
