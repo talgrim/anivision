@@ -64,15 +64,15 @@ get a negative red channel and are clipped: V2 clips 74% of the blue/yellow char
 hue wheel, against 37% and 18% for V0, and the hue wheel shows a visible kink in the blue region.
 Natural-looking colours (the textured ball scene, skin, foliage) clip almost nothing.
 
-Open for Phase 3: which anchor ships (475 nm per the plan vs the blue/yellow plane).
+Resolved in Phase 3 (see below): the 475 nm anchor ships.
 
 ### Caveats found along the way
 
 - Only white is matched to D65. The Gaussian primaries do not reproduce the real sRGB primaries'
   chromaticities, so the model is a rough stand-in for a real display.
 - The neutral point is computed for a true monochromatic light against the display white. The
-  spectral-strip check in Phase 3 renders the stimulus through the display model instead, so
-  its gray crossing may land slightly away from 486.7 nm.
+  Phase 3 spectral strip, which renders the stimulus through the display model, turns gray at
+  about 498 nm instead (see "Phase 3" below).
 
 ## Source checks (2026-11-12)
 
@@ -129,3 +129,120 @@ V1 = [[ 0.36732  0.86065 -0.22797]
   `--variant v1` and exits with an install hint if the package is missing.
 - Consequence for the Phase 3 anchor decision: V1 supports keeping the 475 nm anchor, since
   an independently derived matrix shares V2's negative-red structure and its clipping.
+
+## Phase 3: compare and choose (2026-11-12)
+
+Run `scripts/compare_variants.py` and `scripts/plot_spectral_strip.py`; outputs go to `out/`
+(gitignored). Test set: 8 synthetic charts + 10 CC0 photos (`samples/SOURCES.md`). Variants:
+V0 (Viénot), V1 (Machado 2009), V2 (dog, 475 nm anchor) and **V2b** (analysis only: V2 anchored
+on the sRGB blue/yellow plane). CIEDE2000 (own implementation, matches all 34 Sharma et al. test
+pairs and `colour`) is computed between the 8-bit simulated images, after clipping.
+
+### Matrix distances (Frobenius)
+
+|  | V0 | V1 | V2 | V2b |
+|---|---|---|---|---|
+| V0 | 0 | 0.294 | 0.327 | 0.065 |
+| V1 | 0.294 | 0 | 0.098 | 0.296 |
+| V2 | 0.327 | 0.098 | 0 | 0.314 |
+
+### Image differences between variants (CIEDE2000, all 18 images)
+
+| pair | mean | p99 | max (worst image) |
+|---|---|---|---|
+| V0 vs V2 | 4.00 | 7.1 | 14.8 (blue/yellow chart) |
+| V0 vs V1 | 3.34 | 6.1 | 12.9 |
+| V1 vs V2 | 1.15 | 2.9 | 7.0 |
+| V0 vs V2b | 0.64 | 2.4 | 7.4 |
+| V2 vs V2b | 3.88 | 6.9 | 14.6 |
+
+On the photos alone, V0 vs V2 is 3.19 mean / 6.1 p99 / 12.2 max; on the charts 5.02 / 8.3 / 14.8.
+For scale, the mean change from the original image to a variant ranges from 3.7 to 23.9 across
+the coloured images (0 for the gray ramp).
+
+### Clipping (pixels outside the sRGB gamut after the matrix, clipped per channel)
+
+| set | V0 | V1 | V2 | V2b |
+|---|---|---|---|---|
+| charts, mean | 11.2% | 14.6% | 18.4% | 9.2% |
+| photos, mean | 1.3% | 1.3% | 0.9% | 0.5% |
+| blue/yellow chart | 37.2% | 49.3% | 73.9% | 37.2% |
+| worst photo | 5.1% (orange buoy) | 4.0% | 3.1% (autumn) | 1.6% |
+
+### Does the output keep the dog's cone signals?
+
+Relative error of the (S, L) cone signals, output vs input, divided by white's signal (mean over
+images of the per-image mean): charts V0 0.007, V1 0.014, V2 0.003, V2b 0.001; photos V0 0.003,
+V1 0.005, V2 0.001, V2b 0.001. **Every variant keeps the dog's cone signals to within about
+1.4% of white.** (Dog cones, S 429 / L 555 nm, are close to the human deuteranope's, so V0 is
+already nearly dog-equivalent.) The measure shares V2's display model, so it is a consistency
+check, not independent validation.
+
+Consequence: the variants are **not** separated by physiological accuracy. They differ in which
+2D plane of colours they display, and that is a convention (the dog cannot tell the outputs from
+the input). V2 vs V0 is mostly an anchor effect: V2b reproduces V0 to ΔE 0.64.
+
+### Appearance: where the variants differ
+
+- Red/green: all four collapse them to the same olive and yellow tones.
+- Blues: V0 and V2b push blues toward violet (their output has R = G). V1 and V2 keep blues
+  close to the original. On the blue/yellow chart the mean change from the original is 6.5 ΔE
+  for V0 and 6.5 for V2b, but 3.7 for V1 and 4.0 for V2.
+- Saturated blues pay for this in V1 and V2: the 475 nm plane has a negative red coefficient,
+  so highly saturated blues leave the gamut and clip (table above). The hue wheel shows a
+  visible kink in the blue region. Natural photos clip little (V2 0.9% on average, at most 3.1%).
+
+### Spectral strip (`out/spectral_strip.png`)
+
+All variants render blue, then gray, then yellow. Gray crossings (least CIELAB chroma):
+
+| strip | gray crossing (nm) |
+|---|---|
+| V2, true spectral lights (rendered straight from the dog's cone signals) | 486.9 |
+| analytic neutral point | 486.7 |
+| V2, lights as shown on the display model | 498.0 |
+| V0 and V1, lights as shown on the display model | 499.9 |
+
+- The 486.9 nm crossing confirms the derivation end to end. It is within the 480 ±10 nm target.
+- A camera pixel for a narrow-band light is a human-metameric RGB. The model then treats it as
+  the broad Gaussian primaries, whose dog cone catch is not that of the real narrow line. So
+  through the display model the visible crossing sits about 11 nm higher. Over every case in the
+  primaries table (all centres ±10 nm, sigma 10-40 nm) it stays within 495-507 nm, against
+  484.6-488.2 nm for the analytic value. It is a systematic effect of the model, not noise.
+  The done criterion "gray near 480 nm" therefore holds for true spectral lights (486.9 nm) and
+  not for display-rendered ones (498 nm). Real scenes are broadband, so this mostly affects
+  saturated cyan-green colours.
+- In the true-spectrum row every wavelength above about 560 nm is the same saturated yellow:
+  with two cones, lights beyond the L peak differ only in intensity, and each is scaled so its
+  strongest cone signal equals white's.
+
+### Decision: ship V2 (475 nm anchor) as the dog default; keep V0 as the fallback
+
+Why V2:
+1. It is derived from the dog's cone sensitivities with a documented chain, and `C M = C` holds
+   exactly in the model (checked by tests).
+2. An independently built physiological matrix (V1, Machado 2009) lands close to it (ΔE 1.15,
+   Frobenius 0.098), and both keep blues blue. V0, the outlier, comes from a simplification
+   whose output plane is R = G.
+3. On real photos it clips least of the three (0.9% vs 1.3% for V0).
+4. It disturbs the blue/yellow axis less (4.0 vs 6.5 ΔE on the blue/yellow chart).
+
+What this decision does not claim:
+- V2 is **not** shown to be more accurate than V0. Both keep the dog's cone signals; the plane is
+  a convention. The 475 nm anchor comes from human-dichromat practice (Brettel, Viénot & Mollon
+  1997, quoted from memory and not re-checked); there is no dog data behind it.
+- V2 depends on the Gaussian display model. A ±10 nm primaries shift moves the matrix by
+  0.09-0.23, comparable to the V0-V2 gap, so V2 and V0 are within the uncertainty of the
+  display spectra.
+- The ΔE gap between V0 and V2 on photos is modest (3.2 mean, 6.1 p99): visible, not dramatic.
+
+Keep V0 selectable (`--variant v0`) and export both matrices in Phase 5. The Android code should
+take the matrix as data so the default can change without a code change.
+
+### Follow-ups this surfaced
+
+- Saturated blues clip under V2. Try a gentler gamut policy (for example scaling toward white or
+  compressing chroma instead of clipping each channel) in Phase 4, and mirror it in the shader.
+- Brettel et al. use two half-planes (475 nm on the blue side, 575 nm on the yellow side); V2
+  uses a single plane. The 575 nm anchor moves the matrix by only 0.079, so this is low priority.
+- The display model remains the largest unknown. Real phone primaries would tighten V2.

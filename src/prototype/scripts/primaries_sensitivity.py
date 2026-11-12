@@ -14,6 +14,7 @@ import numpy as np
 
 from anivision.derive import DEFAULT_ANCHOR_NM, derive
 from anivision.spectra import DEFAULT_PRIMARY_CENTERS, DEFAULT_PRIMARY_SIGMA
+from anivision.spectral_strip import neutral_crossing_nm, render_strip
 from anivision.variants import DEUTERANOPIA_VIENOT_1999 as V0
 
 BASE_CENTERS = DEFAULT_PRIMARY_CENTERS
@@ -56,13 +57,15 @@ def main() -> int:
             [
                 name,
                 f"{t.neutral_point_nm:.1f}",
+                f"{neutral_crossing_nm(render_strip(t.matrix)):.1f}",
                 f"{np.linalg.norm(d):.4f}",
                 f"{np.abs(d).max():.4f}",
                 f"{np.linalg.norm(t.matrix - V0):.3f}",
             ]
         )
     table1 = md_table(
-        ["case", "neutral pt (nm)", "‖ΔM‖_F vs baseline", "max |ΔM|", "‖M−V0‖_F"], rows
+        ["case", "neutral pt (nm)", "strip gray (nm)", "‖ΔM‖_F vs baseline", "max abs ΔM", "‖M−V0‖_F"],
+        rows,
     )
 
     rows = []
@@ -86,6 +89,8 @@ def main() -> int:
 
     text = (
         "## Primaries sensitivity (475 nm anchor)\n\n"
+        "`neutral pt` is the analytic value for true spectral lights; `strip gray` is where the\n"
+        "spectral strip rendered through the display model turns gray.\n\n"
         + table1
         + "\n\n## Anchor choice (baseline primaries)\n\n"
         + table2
