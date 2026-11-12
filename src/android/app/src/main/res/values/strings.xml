@@ -14,7 +14,9 @@
     <string name="camera_blocked_open_settings">Open app settings</string>
 
     <string name="mode_normal">Normal</string>
+    <string name="mode_split">Split</string>
     <string name="mode_dog">Dog</string>
+    <string name="split_divider_description">Divider between the normal view on the left and the dog view on the right. Drag to move it.</string>
 
     <string name="blur_label">Acuity blur</string>
     <string name="blur_strength_label">Strength</string>

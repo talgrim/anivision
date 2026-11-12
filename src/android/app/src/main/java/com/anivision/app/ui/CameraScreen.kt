@@ -54,23 +54,27 @@ fun CameraScreen() {
     val view = LocalView.current
     val scope = rememberCoroutineScope()
 
-    var dogView by rememberSaveable { mutableStateOf(true) }
+    var mode by rememberSaveable { mutableStateOf(ViewMode.DOG) }
+    var splitFraction by rememberSaveable { mutableFloatStateOf(SPLIT_DEFAULT) }
     var blur by rememberSaveable { mutableStateOf(false) }
     var blurStrength by rememberSaveable { mutableFloatStateOf(BLUR_STRENGTH_DEFAULT) }
     var saving by remember { mutableStateOf(false) }
 
     val imageCapture = remember { ImageCapture.Builder().build() }
     val capturer = remember(imageCapture) { PhotoCapturer(context.applicationContext, imageCapture) }
-    val settings = VisionSettings(
-        profile = if (dogView) AnimalVision.DOG else null,
+    // A function rather than a value: the preview calls it for every frame, so dragging the divider
+    // changes what is drawn without recomposing this screen.
+    fun currentSettings() = VisionSettings(
+        profile = if (mode == ViewMode.NORMAL) null else AnimalVision.DOG,
         blurExaggeration = if (blur) blurStrength else null,
+        split = if (mode == ViewMode.SPLIT) splitFraction else 0f,
     )
 
     fun takePhoto() {
         saving = true
         scope.launch {
             val message = try {
-                capturer.capture(settings, view.display?.rotation ?: Surface.ROTATION_0)
+                capturer.capture(currentSettings(), view.display?.rotation ?: Surface.ROTATION_0)
                 R.string.photo_saved
             } catch (e: CancellationException) {
                 throw e
@@ -97,7 +101,7 @@ fun CameraScreen() {
         importBusy = true
         scope.launch {
             try {
-                val importSettings = settings.copy(profile = AnimalVision.DOG)
+                val importSettings = currentSettings().copy(profile = AnimalVision.DOG, split = 0f)
                 val open = { context.contentResolver.openInputStream(uri) ?: throw IOException("Cannot open $uri") }
                 imported = filterer.render(open, importSettings)
                 importedUri = null
@@ -159,9 +163,17 @@ fun CameraScreen() {
     Box(modifier = Modifier.fillMaxSize()) {
         CameraPreview(
             modifier = Modifier.fillMaxSize(),
-            settings = settings,
+            settings = { currentSettings() },
             imageCapture = imageCapture,
         )
+        // Before the controls in the Box, so the controls stay on top of the divider's touch strip.
+        if (mode == ViewMode.SPLIT) {
+            SplitDivider(
+                fraction = { splitFraction },
+                onDrag = { splitFraction = (splitFraction + it).coerceIn(SPLIT_MIN, SPLIT_MAX) },
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -171,11 +183,11 @@ fun CameraScreen() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (dogView) {
+            if (mode != ViewMode.NORMAL) {
                 BlurSwitch(checked = blur, onCheckedChange = { blur = it })
                 if (blur) BlurSlider(strength = blurStrength, onStrengthChange = { blurStrength = it })
             }
-            VisionModeToggle(dogView = dogView, onDogViewChange = { dogView = it })
+            VisionModeToggle(mode = mode, onModeChange = { mode = it })
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,

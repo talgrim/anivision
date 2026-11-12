@@ -65,6 +65,7 @@ uniform sampler2D uTexture;
 uniform mat3 uColorMatrix;
 uniform vec2 uStep;
 uniform float uSigma;
+uniform float uSplit; // output-space x of the divider; left of it stays unfiltered
 
 $COLOUR_FUNCTIONS
 
@@ -83,6 +84,9 @@ vec3 fetchLinear(vec2 uv) {
 
 #ifdef BLUR
 vec3 blurred(vec2 uv) {
+    // Unfiltered side of the split: no blur. In the vertical pass the source texture already holds
+    // the unblurred image here, so the same early-out is right for both passes.
+    if (vUv.x < uSplit) return fetchLinear(uv);
     float radius = min(ceil(3.0 * uSigma), float(MAX_RADIUS));
     float k = -0.5 / (uSigma * uSigma);
     vec3 sum = fetchLinear(uv);
@@ -106,7 +110,8 @@ void main() {
     vec3 linear = fetchLinear(vUv);
 #endif
 #ifdef COLOUR_OUT
-    gl_FragColor = vec4(linearToSrgb(clamp(uColorMatrix * linear, 0.0, 1.0)), 1.0);
+    vec3 shown = vUv.x < uSplit ? linear : uColorMatrix * linear;
+    gl_FragColor = vec4(linearToSrgb(clamp(shown, 0.0, 1.0)), 1.0);
 #else
     gl_FragColor = vec4(linear, 1.0);
 #endif

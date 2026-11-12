@@ -128,7 +128,8 @@ class VisionSurfaceProcessor(
             egl.makeCurrent(target.eglSurface)
             val size = target.surfaceOutput.size
             renderer.draw(outputMatrix, size.width, size.height, settings())
-            egl.swap(target.eglSurface, texture.timestamp)
+            // A lost window is not fatal: CameraX closes this output and hands us a new one when the app returns.
+            if (!egl.swap(target.eglSurface, texture.timestamp)) return@guarded
             frameStats?.let { val nowNs = System.nanoTime(); it.record(nowNs, nowNs - startNs) }
         }
     }

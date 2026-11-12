@@ -10,13 +10,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import com.anivision.app.R
 
-/** Normal / dog switch shown over the camera preview. */
+/** Normal / split / dog switch shown over the camera preview. */
 @Composable
 fun VisionModeToggle(
-    dogView: Boolean,
-    onDogViewChange: (Boolean) -> Unit,
+    mode: ViewMode,
+    onModeChange: (ViewMode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -25,18 +24,14 @@ fun VisionModeToggle(
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
     ) {
         SingleChoiceSegmentedButtonRow {
-            SegmentedButton(
-                selected = !dogView,
-                onClick = { onDogViewChange(false) },
-                shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-                label = { Text(stringResource(R.string.mode_normal)) },
-            )
-            SegmentedButton(
-                selected = dogView,
-                onClick = { onDogViewChange(true) },
-                shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-                label = { Text(stringResource(R.string.mode_dog)) },
-            )
+            ViewMode.entries.forEachIndexed { index, entry ->
+                SegmentedButton(
+                    selected = mode == entry,
+                    onClick = { onModeChange(entry) },
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = ViewMode.entries.size),
+                    label = { Text(stringResource(entry.label)) },
+                )
+            }
         }
     }
 }

@@ -80,10 +80,19 @@ internal class EglCore {
 
     fun makeDefaultCurrent() = makeCurrent(pbuffer)
 
-    /** Presents the frame; [timestampNs] is the camera frame timestamp, kept for video recording later. */
-    fun swap(surface: EGLSurface, timestampNs: Long) {
+    /**
+     * Presents the frame; [timestampNs] is the camera frame timestamp, kept for video recording later.
+     *
+     * Returns false if the window behind [surface] is gone or going (the screen was locked or the app
+     * went to the background: the display destroys its surface before CameraX asks us to close the
+     * output). That is not an error, the frame is simply dropped. Any other failure throws.
+     */
+    fun swap(surface: EGLSurface, timestampNs: Long): Boolean {
         EGLExt.eglPresentationTimeANDROID(display, surface, timestampNs)
-        check(EGL14.eglSwapBuffers(display, surface)) { "eglSwapBuffers failed" }
+        if (EGL14.eglSwapBuffers(display, surface)) return true
+        val error = EGL14.eglGetError()
+        if (error == EGL14.EGL_BAD_SURFACE || error == EGL14.EGL_BAD_NATIVE_WINDOW) return false
+        throw IllegalStateException("eglSwapBuffers failed: 0x${Integer.toHexString(error)}")
     }
 
     fun destroySurface(surface: EGLSurface) {
