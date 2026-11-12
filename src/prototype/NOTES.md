@@ -73,6 +73,27 @@ Open for Phase 3: which anchor ships (475 nm per the plan vs the blue/yellow pla
 - The neutral point is computed for a true monochromatic light against the display white. The
   spectral-strip check in Phase 3 renders the stimulus through the display model instead, so
   its gray crossing may land slightly away from 486.7 nm.
-- The Wyman CMF fit and the Govardovskii constants were written from memory. The tests check
-  peaks, normalisation and tabulated CMF values, but the constants still need re-checking
-  against the papers before the README cites them.
+
+## Source checks (2026-11-12)
+
+All three constant sets that were written from memory have now been checked.
+
+- **V0 (Viénot, Brettel & Mollon 1999, Color Res Appl 24:243-252).** Read from the paper's PDF
+  text: the RGB-to-LMS matrix (17.8824 43.5161 4.11935 / 3.45565 27.1554 3.86714 /
+  0.0299566 0.184309 1.46709) and the deuteranope matrix (rows `1 0 0`, `0.494207 0 1.24827`,
+  `0 0 1`) in Eq. 5. `inv(RGB2LMS) @ D @ RGB2LMS` matches `DEUTERANOPIA_VIENOT_1999` to
+  3.5e-6 (the code keeps five decimals). `tests/test_simulate.py` now pins this. The paper does
+  not print the final RGB-to-RGB matrix, so the five-decimal values are derived, not copied.
+- **Govardovskii et al. 2000 (Vis Neurosci 17:509-528).** I did not reach the paper itself.
+  The constants match Stavenga 2010 (J Comp Physiol A 196:869-878, PMC2962788), which quotes
+  them: A=69.7, B=28, C=-14.9, D=0.674, b=0.922, c=1.104,
+  a=0.8795+0.0459 exp(-(lmax-300)^2/11940); beta band A=0.26, peak 189+0.315 lmax, width
+  -40.5+0.195 lmax. That page writes x=(lambda/lmax)-1 (its equation is an image), but the code
+  uses x=lmax/lambda. A numeric check settles it: the raw alpha band equals 1.0008 at x=1 and the
+  normalised curve peaks exactly at lmax for 430, 481, 555 and 700 nm. The stated form of x is a
+  transcription quirk of that page, not a code bug. The equation image itself is unconfirmed.
+- **Wyman, Sloan & Shirley 2013 CMF fit.** The lobe constants were not re-read, but the fit was
+  compared with the CIE 1931 2-degree table from CVRL (`ciexyz31_1.csv`, 380-720 nm, 1 nm).
+  Maximum absolute errors: x 0.015, y 0.008, z 0.024 (z peaks at 1.78, so about 1.3%). RMS 0.003
+  to 0.007. The sums over the grid agree to within 0.1% (106.8 for all three). That is more than
+  accurate enough for this prototype.

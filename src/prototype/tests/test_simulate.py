@@ -63,6 +63,20 @@ def test_v0_matrix_properties():
         get_variant("nope")
 
 
+def test_v0_matches_vienot_1999_derivation():
+    # Matrices as printed in Vienot, Brettel & Mollon (1999), Eq. 4-5.
+    rgb_to_lms = np.array(
+        [
+            [17.8824, 43.5161, 4.11935],
+            [3.45565, 27.1554, 3.86714],
+            [0.0299566, 0.184309, 1.46709],
+        ]
+    )
+    deuteranope = np.array([[1.0, 0.0, 0.0], [0.494207, 0.0, 1.24827], [0.0, 0.0, 1.0]])
+    rebuilt = np.linalg.inv(rgb_to_lms) @ deuteranope @ rgb_to_lms
+    np.testing.assert_allclose(V0, rebuilt, atol=1e-5)  # V0 keeps five decimals
+
+
 def test_v0_keeps_grays_neutral():
     g = np.arange(256, dtype=np.uint8)
     gray = np.stack([g, g, g], axis=-1)[None]

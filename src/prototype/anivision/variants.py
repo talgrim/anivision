@@ -11,8 +11,9 @@ import numpy as np
 # V0: stock deuteranopia matrix, Vienot, Brettel & Mollon (1999), for linear
 # sRGB (D65). Rows 1 and 2 are equal, so red and green collapse onto one
 # axis; each row sums to 1, so grays stay gray (M @ white = white).
-# NOTE: coefficients written down from the published/libDaltonLens values and
-# not yet cross-checked against a library (the optional V1 check, Phase 3).
+# Checked against the paper (Eq. 4-5: RGB->LMS matrix and the deuteranope
+# matrix) by rebuilding inv(RGB2LMS) @ D @ RGB2LMS; see NOTES.md and
+# tests/test_simulate.py::test_v0_matches_vienot_1999_derivation.
 DEUTERANOPIA_VIENOT_1999 = np.array(
     [
         [0.29275, 0.70725, 0.0],
