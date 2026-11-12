@@ -1,4 +1,4 @@
-"""Command line: ``python -m anivision in.jpg out.jpg --variant v0``."""
+"""Command line: ``python -m anivision in.jpg out.jpg [--variant v0|v1|v2]`` (default v2)."""
 
 from __future__ import annotations
 
@@ -37,7 +37,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("output", help="output image (format from extension)")
     p.add_argument(
         "--variant",
-        default="v0",
+        default="v2",
         choices=list(VARIANT_IDS),
         help="colour transform variant (default: %(default)s)",
     )
