@@ -1,6 +1,7 @@
 package com.anivision.app.vision.gl
 
 import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.SurfaceTexture
 import android.opengl.EGLSurface
 import android.opengl.GLES20
@@ -89,6 +90,63 @@ class GpuGoldenVectorTest {
         }
     }
 
+    /** Left of the divider is the untouched camera colour, right of it the dog colour. */
+    @Test
+    fun splitShowsNormalOnTheLeftAndDogOnTheRight() {
+        val tolerance = tolerance()
+        val settings = VisionSettings(profile = AnimalVision.DOG_V2, split = 0.5f)
+        val failures = mutableListOf<String>()
+        for (vector in vectors()) {
+            val src = vector.rgb("srgb")
+            val dog = vector.rgb("v2")
+            val (left, right) = renderRow(settings, listOf(SIZE / 4, SIZE * 3 / 4)) { camera.show(src) }
+            if (maxDiff(left, src) > 1) failures += "${vector.label} left: expected ${src.toList()}, got ${left.toList()}"
+            if (maxDiff(right, dog) > tolerance) failures += "${vector.label} right: expected ${dog.toList()}, got ${right.toList()}"
+        }
+        assertTrue("split sides wrong:\n" + failures.joinToString("\n"), failures.isEmpty())
+    }
+
+    @Test
+    fun splitAtTheEdgesIsAllDogOrAllNormal() {
+        val tolerance = tolerance()
+        val xs = listOf(2, SIZE - 3)
+        val failures = mutableListOf<String>()
+        for (vector in vectors()) {
+            val src = vector.rgb("srgb")
+            val dog = vector.rgb("v2")
+            renderRow(VisionSettings(profile = AnimalVision.DOG_V2, split = 0f), xs) { camera.show(src) }.forEach {
+                if (maxDiff(it, dog) > tolerance) failures += "${vector.label} split 0: expected ${dog.toList()}, got ${it.toList()}"
+            }
+            renderRow(VisionSettings(profile = AnimalVision.DOG_V2, split = 1f), xs) { camera.show(src) }.forEach {
+                if (maxDiff(it, src) > 1) failures += "${vector.label} split 1: expected ${src.toList()}, got ${it.toList()}"
+            }
+        }
+        assertTrue("split extremes wrong:\n" + failures.joinToString("\n"), failures.isEmpty())
+    }
+
+    /**
+     * The picture has a hard white/black edge in the middle and the divider sits to the right of it,
+     * so the edge is on the Normal side: the blur must leave it sharp there (and not on the Dog side).
+     */
+    @Test
+    fun theNormalSideStaysSharpWhenTheBlurIsOn() {
+        val white = intArrayOf(255, 255, 255)
+        val black = intArrayOf(0, 0, 0)
+        val beforeEdge = SIZE / 2 - 1
+        val show = { camera.showHalves(white, black) }
+
+        val blurredEverywhere = VisionSettings(AnimalVision.DOG_V2, Acuity.MAX_EXAGGERATION, split = 0f)
+        val unblurred = VisionSettings(AnimalVision.DOG_V2, split = 0f)
+        val dogBlurred = renderRow(blurredEverywhere, listOf(beforeEdge), show).single()
+        val dogSharp = renderRow(unblurred, listOf(beforeEdge), show).single()
+        assertTrue("blur should be visible next to the edge, got ${dogBlurred.toList()} vs ${dogSharp.toList()}", maxDiff(dogBlurred, dogSharp) > 8)
+
+        val split = VisionSettings(AnimalVision.DOG_V2, Acuity.MAX_EXAGGERATION, split = 0.75f)
+        val normalSide = renderRow(split, listOf(beforeEdge, SIZE / 2), show)
+        assertTrue("white next to the edge was blurred: ${normalSide[0].toList()}", maxDiff(normalSide[0], white) <= 1)
+        assertTrue("black next to the edge was blurred: ${normalSide[1].toList()}", maxDiff(normalSide[1], black) <= 1)
+    }
+
     private fun checkAllVectors(variant: Variant, blur: Float?) {
         val tolerance = tolerance()
         val settings = VisionSettings(variant.profile, blur)
@@ -116,6 +174,13 @@ class GpuGoldenVectorTest {
         val corner = readPixel(0, 0)
         assertEquals("corner differs from centre for ${srgb.toList()}", centre.toList(), corner.toList())
         centre
+    }
+
+    /** Runs [show] to set up the camera frame, draws it, and reads the pixels at [xs] on the middle row. */
+    private fun renderRow(settings: VisionSettings, xs: List<Int>, show: () -> Unit): List<IntArray> = onGl {
+        show()
+        renderer.draw(camera.textureMatrix(), SIZE, SIZE, settings)
+        xs.map { readPixel(it, SIZE / 2) }
     }
 
     private fun readPixel(x: Int, y: Int): IntArray {
@@ -162,6 +227,18 @@ class GpuGoldenVectorTest {
         fun show(srgb: IntArray) {
             val canvas = surface.lockCanvas(null)
             canvas.drawColor(Color.rgb(srgb[0], srgb[1], srgb[2]))
+            surface.unlockCanvasAndPost(canvas)
+            texture.updateTexImage()
+        }
+
+        /** Left half [left], right half [right]. */
+        fun showHalves(left: IntArray, right: IntArray) {
+            val canvas = surface.lockCanvas(null)
+            val paint = Paint()
+            paint.color = Color.rgb(left[0], left[1], left[2])
+            canvas.drawRect(0f, 0f, SIZE / 2f, SIZE.toFloat(), paint)
+            paint.color = Color.rgb(right[0], right[1], right[2])
+            canvas.drawRect(SIZE / 2f, 0f, SIZE.toFloat(), SIZE.toFloat(), paint)
             surface.unlockCanvasAndPost(canvas)
             texture.updateTexImage()
         }

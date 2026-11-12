@@ -51,6 +51,24 @@ class VisionShadersTest {
     }
 
     @Test
+    fun everyVariantDeclaresTheSplitUniform() {
+        for (variant in VisionShaders.Variant.entries) {
+            assertTrue(variant.name, VisionShaders.fragment(variant).contains("uniform float uSplit;"))
+        }
+    }
+
+    @Test
+    fun theUnfilteredSideSkipsTheBlurAndTheColourMatrix() {
+        for (variant in VisionShaders.Variant.entries.filter { it.blur }) {
+            // Blurring the Normal side would smear the picture the user is comparing against.
+            assertTrue(variant.name, VisionShaders.fragment(variant).contains("if (vUv.x < uSplit) return fetchLinear(uv);"))
+        }
+        for (variant in VisionShaders.Variant.entries.filter { it.colourOut }) {
+            assertTrue(variant.name, VisionShaders.fragment(variant).contains("vUv.x < uSplit ? linear : uColorMatrix * linear"))
+        }
+    }
+
+    @Test
     fun theBlurPipelineEncodesToSrgbOnlyInTheLastPass() {
         assertTrue(VisionShaders.Variant.COLOUR.colourOut)
         assertFalse(VisionShaders.Variant.BLUR_HORIZONTAL.colourOut)
