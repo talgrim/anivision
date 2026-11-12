@@ -288,6 +288,14 @@ def glsl_snippet(generator: dict) -> str:
         "vec3 linearToSrgb(vec3 c) {\n"
         "    return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c));\n"
         "}\n\n"
+        f"const vec3 LUMA = vec3({_glsl_fmt([float(v) for v in LUMA])}); // linear-light luminance weights\n\n"
+        "// Shadow lift (artistic, optional): luminance gamma that keeps colour ratios; gamma 1.0 is off.\n"
+        "// Applied to linear light after the blur and before the matrix.\n"
+        "vec3 shadowLift(vec3 rgb, float gamma) {\n"
+        "    float y = clamp(dot(LUMA, rgb), 1.0e-6, 1.0);\n"
+        "    float peak = max(max(rgb.r, rgb.g), max(rgb.b, 1.0e-6));\n"
+        "    return rgb * min(pow(y, gamma - 1.0), max(1.0 / peak, 1.0));\n"
+        "}\n\n"
         "// Colour step only (no blur, no shadow lift). Gamut policy: clamp each channel.\n"
         "vec3 dogView(vec3 srgb, mat3 m) {\n"
         "    vec3 linear = clamp(m * srgbToLinear(srgb), 0.0, 1.0);\n"
@@ -316,6 +324,11 @@ def golden_document(generator: dict) -> dict:
         name: apply_matrix(srgb_to_linear(rgb.astype(np.float64) / 255.0), m)[0]
         for name, m in mats.items()
     }
+    lift_variant = DEFAULT_VARIANT
+    lifted = {
+        gamma: simulate(rgb, mats[lift_variant], shadow_gamma=gamma).image[0]
+        for gamma in (SUGGESTED_GAMMA, STRONGEST_GAMMA)
+    }
     vectors = []
     for i, (label, c) in enumerate(inputs):
         entry: dict = {"label": label, "srgb": list(c)}
@@ -342,4 +355,15 @@ def golden_document(generator: dict) -> dict:
         },
         "seed": GOLDEN_SEED,
         "vectors": vectors,
+        "shadow_lift_vectors": {
+            "description": (
+                "Colour step with the shadow lift in front of the matrix (no blur): decode sRGB, lift "
+                "shadows with the gamma, multiply by the matrix, clamp, encode, round to 8 bits. Each "
+                "'srgb' list is index-aligned with 'vectors'."
+            ),
+            "variant": lift_variant,
+            "gammas": [
+                {"gamma": gamma, "srgb": [[int(v) for v in px] for px in out]} for gamma, out in lifted.items()
+            ],
+        },
     }

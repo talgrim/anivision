@@ -3,8 +3,8 @@
   "caveat": "Approximation of what a dog's cones capture, not of what a dog subjectively experiences. Assumes sRGB input and a modelled display (Gaussian primaries); see src/prototype/README.md.",
   "generator": {
     "script": "src/prototype/scripts/export_constants.py",
-    "git_commit": "44c5a109d10deeb2e80be4aca04904a4ce8473fb",
-    "git_dirty": false
+    "git_commit": "3a42986f9e07a3a927013d606eb9f98c30dad7dd",
+    "git_dirty": true
   },
   "convention": {
     "space": "linear sRGB (D65), matrix acts on column vectors: out = M @ rgb",
