@@ -123,3 +123,13 @@ def test_cat_neutral_point_is_longer_than_the_dogs():
 
 def test_acuity_ratio_follows_the_animal():
     assert [acuity_ratio_for(v) for v in ("v0", "v1", "v2", "V2", "cat")] == [3.75, 3.75, 3.75, 3.75, 3.5]
+
+
+def test_cat_traits_are_artistic_and_the_dog_has_none():
+    from anivision.lowlight import SUGGESTED_GAMMA
+    from anivision.variants import profile_for
+
+    assert (DOG.shadow_gamma, DOG.peripheral_blur) == (1.0, 0.0)
+    assert CAT.shadow_gamma == SUGGESTED_GAMMA
+    assert CAT.peripheral_blur > 0.0
+    assert profile_for("CAT") is CAT and profile_for("v0") is DOG

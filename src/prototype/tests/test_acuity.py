@@ -11,6 +11,8 @@ from anivision.acuity import (
     AcuityParams,
     blur_for_image,
     gaussian_blur,
+    peripheral_blur,
+    radius_squared,
     sigma_px,
 )
 from anivision.colorspace import linear_to_srgb
@@ -119,3 +121,58 @@ def test_recommended_exaggeration_range():
     top = AcuityParams(exaggeration=MAX_EXAGGERATION)
     assert sigma_px(1920, top) == pytest.approx(9.4, abs=0.1)
     assert sigma_px(640, top) == pytest.approx(3.1, abs=0.1)
+
+
+# --------------------------------------------------------------------------- peripheral blur
+
+
+def _stripes(size=81):
+    img = np.zeros((size, size, 1))
+    img[:, ::2] = 1.0  # one-pixel vertical stripes
+    return img
+
+
+def test_negative_periphery_is_rejected():
+    with pytest.raises(ValueError):
+        AcuityParams(periphery=-0.1)
+
+
+def test_radius_squared_is_zero_at_the_centre_and_one_in_the_corners():
+    r2 = radius_squared(41, 61)
+    assert r2[20, 30] == pytest.approx(0.0, abs=1e-12)
+    for corner in (r2[0, 0], r2[0, -1], r2[-1, 0], r2[-1, -1]):
+        assert corner == pytest.approx(1.0)
+    assert radius_squared(1, 1).shape == (1, 1)
+
+
+def test_zero_periphery_is_the_uniform_blur():
+    img = np.random.default_rng(3).random((30, 40, 3))
+    np.testing.assert_allclose(peripheral_blur(img, 1.5, 0.0), gaussian_blur(img, 1.5))
+
+
+def test_peripheral_blur_blurs_the_edges_more_than_the_centre():
+    img = _stripes()
+    uniform, edge = gaussian_blur(img, 0.6), peripheral_blur(img, 0.6, 3.0)
+    centre, outer = (slice(35, 46), slice(35, 46)), (slice(8, 19), slice(8, 19))  # r^2 ~ 0.46
+    assert uniform[centre].std() == pytest.approx(uniform[outer].std(), rel=0.1)
+    np.testing.assert_allclose(edge[centre], uniform[centre], atol=0.02)  # the centre keeps sigma
+    assert edge[outer].std() < 0.6 * uniform[outer].std()  # further out it is much softer
+
+
+def test_peripheral_blur_keeps_constant_images_and_shape():
+    img = np.full((20, 33, 3), 0.4)
+    out = peripheral_blur(img, 2.0, 2.0)
+    assert out.shape == img.shape
+    np.testing.assert_allclose(out, img, atol=1e-9)
+
+
+def test_peripheral_blur_rejects_too_few_levels():
+    with pytest.raises(ValueError):
+        peripheral_blur(np.zeros((8, 8, 3)), 1.0, 1.0, levels=1)
+
+
+def test_blur_for_image_reports_the_centre_sigma_with_a_periphery():
+    img = np.zeros((60, 80, 3))
+    _, plain = blur_for_image(img, AcuityParams())
+    blurred, with_periphery = blur_for_image(img, AcuityParams(periphery=1.0))
+    assert with_periphery == plain and blurred.shape == img.shape

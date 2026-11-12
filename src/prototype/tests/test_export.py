@@ -239,3 +239,13 @@ def test_cat_acuity_is_exported_for_the_android_sigma_helper():
     assert "const val CAT_ACUITY_RATIO = 3.5f" in kotlin
     assert "const val DOG_ACUITY_RATIO = 3.75f" in kotlin
     assert "acuityRatio: Float = ACUITY_RATIO" in kotlin
+
+
+def test_cat_traits_are_exported():
+    doc = matrix_document(GEN)
+    assert doc["profiles"]["cat"]["shadow_gamma"] == 0.85 and doc["profiles"]["cat"]["peripheral_blur"] == 1.0
+    assert doc["profiles"]["dog"]["shadow_gamma"] == 1.0 and doc["profiles"]["dog"]["peripheral_blur"] == 0.0
+    assert "r2" in doc["acuity"]["peripheral_blur"] and "inherent" in doc["shadow_lift"]
+    kotlin = kotlin_snippet(GEN)
+    for line in ("CAT_SHADOW_GAMMA = 0.85f", "CAT_PERIPHERAL_BLUR = 1f", "DOG_SHADOW_GAMMA = 1f"):
+        assert f"const val {line}" in kotlin
