@@ -183,12 +183,12 @@ Then update `Android.md` Phases 3-4 to point at these files.
 
 ## 7. Done criteria
 
-- [ ] `pytest` passes: color-space round trip, projection properties, neutral point near 480 nm
-- [ ] Red/green/orange/brown patches are clearly collapsed, blue vs yellow stay distinct, grays stay neutral
-- [ ] The spectral strip shows blue, then gray near 480 nm, then yellow
-- [ ] V0 vs V2 comparison is documented, with a chosen default
-- [ ] `export/` contains the matrix, snippets and golden vectors
-- [ ] `README` states the "approximation" caveat and cites the sources
+- [x] `pytest` passes: color-space round trip, projection properties, neutral point near 480 nm (analytic 486.7 nm, inside the 480 ±10 nm tolerance)
+- [x] Red/green/orange/brown patches are clearly collapsed, blue vs yellow stay distinct, grays stay neutral (checked by eye on the charts and photos, see `NOTES.md` Phase 3)
+- [x] The spectral strip shows blue, then gray near 480 nm, then yellow (gray at 486.9 nm for true spectral lights; about 498 nm when the lights are rendered through the display model, see `NOTES.md`)
+- [x] V0 vs V2 comparison is documented, with a chosen default (V2 ships, V0 is the fallback)
+- [x] `export/` contains the matrix, snippets and golden vectors
+- [x] `README` states the "approximation" caveat and cites the sources
 
 ## 8. Risks and assumptions
 
@@ -204,6 +204,10 @@ Then update `Android.md` Phases 3-4 to point at these files.
 ## 9. Open questions
 
 1. Is it worth adding the optional `colour-science` dependency for the V1 cross-check, or keep dependencies to numpy and pillow?
+   *Resolved:* optional extra (`requirements-extra.txt`); V1 is Machado 2009 deuteranopia.
 2. Which photos should be used as test material? Your own, or public-domain images?
+   *Resolved:* 10 CC0 photos from Wikimedia Commons (`samples/SOURCES.md`).
 3. Should the cat profile (S ~450 nm, L/M ~555 nm) be derived now, since the pipeline makes it nearly free, or deferred?
+   *Resolved:* deferred; `profiles.py` has only the dog.
 4. Do you want the lens-transmission refinement in v1, or only if V2 vs V0 differences look significant?
+   *Resolved:* deferred.

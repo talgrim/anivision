@@ -9,3 +9,6 @@ __pycache__/
 
 # Prototype generated output
 src/prototype/out/
+
+# Session context snapshot
+context.md
