@@ -16,21 +16,28 @@ object Acuity {
 
     private const val HUMAN_CUTOFF_CPD = 30.0
     private const val MTF_AT_CUTOFF = 0.1
-    private const val ACUITY_RATIO = 3.75
+    /** The dog's acuity ratio (20/75 against a human's 20/20), the default for a profile. */
+    const val DEFAULT_ACUITY_RATIO = 3.75f
     private const val HFOV_DEG = 70.0
 
     private val k = 2.0 * sqrt(2.0 * ln(1.0 / MTF_AT_CUTOFF)) / Math.PI
 
     /**
      * Gaussian sigma in pixels for a frame whose long edge is [longEdgePx] pixels. [exaggeration]
-     * is clamped to `0..MAX_EXAGGERATION`; 1.0 is the physical value.
+     * is clamped to `0..MAX_EXAGGERATION`; 1.0 is the physical value. [acuityRatio] is the
+     * animal's (a profile's `acuityRatio`); it defaults to the dog's.
      */
-    fun sigmaPx(longEdgePx: Int, exaggeration: Float = DEFAULT_EXAGGERATION): Float {
+    fun sigmaPx(
+        longEdgePx: Int,
+        exaggeration: Float = DEFAULT_EXAGGERATION,
+        acuityRatio: Float = DEFAULT_ACUITY_RATIO,
+    ): Float {
         require(longEdgePx > 0) { "longEdgePx must be positive, got $longEdgePx" }
+        require(acuityRatio > 0f) { "acuityRatio must be positive, got $acuityRatio" }
         val e = exaggeration.coerceIn(0f, MAX_EXAGGERATION)
-        return (k * (ACUITY_RATIO / 60.0 / 2.0) * (longEdgePx / HFOV_DEG) * e).toFloat()
+        return (k * (acuityRatio / 60.0 / 2.0) * (longEdgePx / HFOV_DEG) * e).toFloat()
     }
 
-    /** Cutoff of the modelled animal in cycles per degree. */
-    val cutoffCpd: Double get() = HUMAN_CUTOFF_CPD / ACUITY_RATIO
+    /** Cutoff of the dog in cycles per degree. */
+    val cutoffCpd: Double get() = HUMAN_CUTOFF_CPD / DEFAULT_ACUITY_RATIO
 }
