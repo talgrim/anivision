@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -37,15 +38,11 @@ import com.anivision.app.photo.PhotoCapturer
 import com.anivision.app.photo.PhotoFilterer
 import com.anivision.app.photo.PhotoStore
 import com.anivision.app.photo.sharePhoto
-import com.anivision.app.vision.Acuity
 import com.anivision.app.vision.AnimalVision
 import com.anivision.app.vision.VisionSettings
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
-
-/** Blur strength when the switch is on: 1.0 is physical (see Acuity); up to Acuity.MAX_EXAGGERATION. */
-private const val BLUR_EXAGGERATION = Acuity.DEFAULT_EXAGGERATION
 
 /** Roughly the gallery button's width, mirrored on the shutter's other side. */
 private val GALLERY_BUTTON_BALANCE = 92.dp
@@ -59,13 +56,14 @@ fun CameraScreen() {
 
     var dogView by rememberSaveable { mutableStateOf(true) }
     var blur by rememberSaveable { mutableStateOf(false) }
+    var blurStrength by rememberSaveable { mutableFloatStateOf(BLUR_STRENGTH_DEFAULT) }
     var saving by remember { mutableStateOf(false) }
 
     val imageCapture = remember { ImageCapture.Builder().build() }
     val capturer = remember(imageCapture) { PhotoCapturer(context.applicationContext, imageCapture) }
     val settings = VisionSettings(
         profile = if (dogView) AnimalVision.DOG else null,
-        blurExaggeration = if (blur) BLUR_EXAGGERATION else null,
+        blurExaggeration = if (blur) blurStrength else null,
     )
 
     fun takePhoto() {
@@ -173,7 +171,10 @@ fun CameraScreen() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (dogView) BlurSwitch(checked = blur, onCheckedChange = { blur = it })
+            if (dogView) {
+                BlurSwitch(checked = blur, onCheckedChange = { blur = it })
+                if (blur) BlurSlider(strength = blurStrength, onStrengthChange = { blurStrength = it })
+            }
             VisionModeToggle(dogView = dogView, onDogViewChange = { dogView = it })
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
