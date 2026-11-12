@@ -13,6 +13,13 @@ internal object ExportFiles {
         return JSONObject(file.readText())
     }
 
+    /** Text of `animal_vision.glsl`, with line endings normalised to `\n`. */
+    val glsl: String by lazy {
+        val file = File(dir, "animal_vision.glsl")
+        check(file.isFile) { "Missing ${file.canonicalPath}; run scripts/export_constants.py in src/prototype" }
+        file.readText().replace("\r\n", "\n")
+    }
+
     val matrix: JSONObject by lazy { read("matrix.json") }
     val goldenVectors: JSONObject by lazy { read("golden_vectors.json") }
 
