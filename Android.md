@@ -173,11 +173,11 @@ The prototype validated the look on still photos before the shader work. Details
 ## 7. Verification checklist
 
 - [ ] Project builds from a clean clone (`./gradlew assembleDebug`)
-- [ ] Camera permission flow works (grant, deny, deny permanently)
+- [x] Camera permission flow works (grant, deny, deny permanently)
 - [ ] Live preview runs at about 30 fps with no visible stutter on a mid-range device
 - [ ] Red/green scenes collapse to yellow/brown as expected; blues and yellows stay distinct; grays stay neutral
 - [ ] Preview matches the Python prototype output within a small tolerance
-- [ ] Rotation, front/back camera and app backgrounding/resume don't crash
+- [ ] Rotation, front/back camera and app backgrounding/resume don't crash (rotation and backgrounding/resume verified in Phase 2, back camera only)
 - [ ] Captured photos/videos match what the preview showed (Phase 5)
 
 ## 8. Decisions on the former open questions
