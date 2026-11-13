@@ -88,12 +88,14 @@ anivision/
                 ├── java/com/anivision/app/
                 │   ├── MainActivity.kt
                 │   ├── camera/        # CameraX setup, permission handling
-                │   ├── render/        # GL renderer / shader pipeline
-                │   ├── vision/        # AnimalVision profiles (matrix, blur, etc.)
-                │   └── ui/            # Compose screens and theme
-                ├── assets/shaders/    # *.glsl (vertex + fragment)
+                │   ├── photo/         # capture, decode (EXIF), offscreen filter, MediaStore save, share, split captions
+                │   ├── vision/        # AnimalVision profiles, settings, acuity and night-boost maths
+                │   │   └── gl/        # EGL, shader programs, renderer, CameraX surface processor, still-image filter
+                │   └── ui/            # Compose screens, controls and theme
                 └── res/
 ```
+
+The shaders are not separate `.glsl` assets: they are string constants in `vision/gl/VisionShaders.kt`, kept in step with `export/animal_vision.glsl` by a unit test. The layout above is what exists today (it replaced an earlier plan with `render/` and `assets/shaders/` directories).
 
 The Android project lives in `src/android/`, next to `src/prototype/`, in the same repo. Git ignore rules live only in the root `.gitignore`; the project has no `.gitignore` files of its own.
 
@@ -103,7 +105,7 @@ The working copy is the current directory (`C:\Users\Shared\RiderProjects\anivis
 
 Needed:
 
-- JDK 17 (bundled with Android Studio)
+- A JDK. Android Studio bundles one, and `gradle/gradle-daemon-jvm.properties` asks Gradle for a specific toolchain (currently 25), which the foojay plugin downloads on the first build, so that build needs network access. There is no `java` on the WSL PATH, so run Gradle builds from Windows
 - Android Studio (latest stable) with the SDK Platform, Build-Tools and Platform-Tools
 - A **physical Android device** with USB debugging (the test device runs Android 11, API 30, which is above minSdk 29). The emulator's virtual camera is poor for judging color, so real hardware is strongly preferred.
 - Python 3.10+ with `numpy`, `pillow` for the prototype
@@ -128,14 +130,20 @@ Needed:
 5. Verify a live, unfiltered preview on the device.
 6. Commit.
 
-### Phase 3: Quick MVP filter
+### Phase 3: Quick MVP filter *(superseded by Phase 4)*
+
+This phase was the first, throwaway version. The `ColorMatrixColorFilter` code was removed when the GPU pipeline of Phase 4 replaced it, so no `ColorMatrix` code exists in the app any more. The steps are kept as the record of the original plan.
+
 1. Create `vision/AnimalVision.kt`: a data class holding the 3x3 matrix (and later blur radius, brightness) plus a `DOG` profile. Take the matrix from the prototype export, not from memory: `DOG_V2_COLOR_MATRIX_4X5` (default) or `DOG_V0_COLOR_MATRIX_4X5` (fallback) in `src/prototype/export/AnimalVisionConstants.kt.txt`. Keep the matrix as data so the default can change without a code change (`export/matrix.json` holds both, plus the generating commit).
 2. Set `PreviewView` to `ImplementationMode.COMPATIBLE` (TextureView) and apply a `ColorMatrixColorFilter` via the view's layer paint (`setLayerType(LAYER_TYPE_HARDWARE, paint)`).
 3. Add a toggle: normal vs. dog view.
 4. Verify on-device against the Python prototype output (`python -m anivision in.jpg out.png --variant v2`). Color will be slightly off, since `ColorMatrix` runs on gamma-encoded values. This is acceptable for the MVP.
 5. Commit.
 
-### Phase 4: Proper GPU pipeline
+### Phase 4: Proper GPU pipeline *(done)*
+
+Implemented as a CameraX `SurfaceProcessor` / `CameraEffect` (`VisionSurfaceProcessor`, `VisionEffect`), drawing with `VisionRenderer` and the shaders in `VisionShaders.kt`. The same renderer filters still photos offscreen (`StillImageFilter`), so saved photos match the preview. The split is drawn as two scissored passes, one per side, each with its own profile. The GPU golden-vector check is the instrumented test `GpuGoldenVectorTest`.
+
 1. Replace the color-filter hack with a CameraX `SurfaceProcessor` / `CameraEffect` (or a custom `GLSurfaceView` fed by a `SurfaceTexture`).
 2. Write the fragment shader using `samplerExternalOES`:
    - sample camera texture
@@ -172,7 +180,7 @@ The prototype validated the look on still photos before the shader work. Details
 
 ## 7. Verification checklist
 
-- [ ] Project builds from a clean clone (`./gradlew assembleDebug`)
+- [ ] Project builds from a clean clone (`./gradlew assembleDebug`) (not yet checked)
 - [x] Camera permission flow works (grant, deny, deny permanently)
 - [x] Live preview runs at about 30 fps with no visible stutter on a mid-range device (verified in every mode tried on the test phone)
 - [ ] Red/green scenes collapse to yellow/brown as expected; blues and yellows stay distinct; grays stay neutral
