@@ -123,7 +123,7 @@ src/prototype/
 │   ├── derive.py                 # C matrix, projection M, neutral-point finder
 │   ├── simulate.py               # apply M to images (linear light), clipping policy
 │   ├── acuity.py                 # Gaussian blur from acuity ratio / FOV
-│   ├── profiles.py               # DOG (and later CAT) parameter sets
+│   ├── profiles.py               # DOG and CAT parameter sets
 │   └── cli.py                    # python -m anivision in.jpg out.jpg --variant v2
 ├── scripts/
 │   ├── make_test_charts.py       # synthetic test images
@@ -191,7 +191,7 @@ Use a venv (`src/prototype/.venv`, gitignored) and Python 3.10+.
 - `export/golden_vectors.json`: 50-100 input sRGB colors with expected output sRGB, covering primaries, grays, skin tones, and random samples
 - the acuity recipe (sigma formula and defaults)
 
-Then update `Android.md` Phases 3-4 to point at these files.
+Then update `Android.md` Phases 3-4 to point at these files. *(Done.)*
 
 ## 7. Done criteria
 

@@ -1,6 +1,6 @@
 # Anivision Python prototype
 
-A still-image simulator of canine colour vision. It settles the colour maths and the acuity
+A still-image simulator of canine (and feline) colour vision. It settles the colour maths and the acuity
 recipe before the Android app (`../../Android.md`) is built, and exports the results as data
 (`export/`).
 
@@ -83,7 +83,9 @@ exaggeration is 1.0 (physical), with 8.0 as the maximum.
 - The acuity baseline (a Gaussian with 10% contrast at the 8 cycles/degree cutoff) is a modelling
   choice, and the 20/75 acuity figure comes from the project plan, not from a source I checked.
 - Camera input is assumed to be sRGB; phones may apply tone mapping or a wide gamut.
-- Only a dog profile exists. The lens transmission of the dog eye is not modelled.
+- Only dog and cat profiles exist (no human profile: "human" is the unfiltered image). The cat's
+  peaks, acuity and its two artistic traits (shadow lift 0.85, peripheral blur) are approximate and
+  not verified against primary papers. The lens transmission of the eye is not modelled.
 
 ## Sources
 
