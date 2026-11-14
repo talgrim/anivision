@@ -167,7 +167,7 @@ Implemented as a CameraX `SurfaceProcessor` / `CameraEffect` (`VisionSurfaceProc
 ### Phase 6: Polish and release prep
 - App icon, name, theme (light/dark). *(Icon and name done: an eye with a split iris. Theme: own palette from the icon, light and dark schemes, no dynamic colour.)*
 - About screen with the "approximation" disclaimer and short science notes. *(Done.)*
-- Release build config (R8/minify, signing config kept out of git), privacy policy (camera use only, no data collected), Play Console listing. *(Signing and R8 done; R8 needs a signed-release device test. Privacy text is in the About screen. Play Console listing not started.)*
+- Release build config (R8/minify, signing config kept out of git), privacy policy (camera use only, no data collected), Play Console listing. *(Signing and R8 done and verified on a device, see section 7. Privacy text is in the About screen. The Play listing is drafted in `src/android/PLAY_LISTING.md`; a hosted privacy policy URL and the store graphics are still to do.)*
 
 ## 6. Python prototype (done, merged in PR #1)
 
