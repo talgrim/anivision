@@ -7,12 +7,22 @@ plugins {
 }
 
 // Release signing secrets live in src/android/keystore.properties (git-ignored, see RELEASING.md).
-// Without that file the release build still works but is left unsigned.
+// Without that file assembleRelease still works but leaves the APK unsigned; bundleRelease (the
+// Play Store upload) fails instead, so an unsigned bundle cannot be produced by accident.
 val keystoreProperties: Properties? = providers
     .fileContents(rootProject.layout.projectDirectory.file("keystore.properties"))
     .asText
     .map { text -> Properties().apply { load(StringReader(text)) } }
     .orNull
+
+gradle.taskGraph.whenReady {
+    if (keystoreProperties == null && hasTask(":app:bundleRelease")) {
+        throw GradleException(
+            "bundleRelease needs release signing: create src/android/keystore.properties " +
+                "(copy keystore.properties.example, see RELEASING.md).",
+        )
+    }
+}
 
 android {
     namespace = "com.anivision.app"
