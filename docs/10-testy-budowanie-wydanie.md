@@ -130,7 +130,7 @@ keyPassword=...
 
 ### Krok 4: przetestuj na prawdziwym telefonie
 
-Lista kontrolna z `RELEASING.md`: tryby Normal/Split/Dog, rozmycie, nocny boost, zdjęcia, import, Save/Share, ekran About, obrót ekranu, wejście w tło i powrót.
+Lista kontrolna z `RELEASING.md`: widoki Human/Dog/Cat i Split, rozmycie, nocny boost, zdjęcia, import, Save/Share, ekran About, obrót ekranu, wejście w tło i powrót.
 
 Debugowy i wydaniowy APK są podpisane różnymi kluczami, więc **przed instalacją drugiego** wykonaj `adb uninstall com.anivision.app`.
 

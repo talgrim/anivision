@@ -32,7 +32,7 @@ still succeeds but produces `app-release-unsigned.apk`, which phones refuse to i
 ## Check before sharing
 
 Install the release APK on your own phone first (`adb install -r app-release.apk`) and exercise
-the whole app: Normal / Split / Dog, the blur and night boost switches and sliders, taking a photo
+the whole app: the Human / Dog / Cat views and Split, the blur and night boost switches and sliders, taking a photo
 in each view (check the file in Pictures/AniVision), importing a photo from the gallery with Save
 and Share, the About screen, rotation, and backgrounding and resuming.
 
