@@ -6,13 +6,15 @@ Debug APKs (`./gradlew assembleDebug`) also install, but are signed with a throw
 ## One-time: create a signing key
 
 Keep the keystore **outside the repository** (or at least git-ignored) and back it up. Losing it
-means you can never ship an update that installs over existing copies.
+means you can never ship an update that installs over existing copies. With Play App Signing
+(recommended) this key is only the *upload* key, and Google can reset it if it is lost; the key that
+signs what users install is held by Google.
 
 From PowerShell (the JDK bundled with Android Studio has `keytool`):
 
 ```powershell
 & "C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -genkeypair -v `
-  -keystore C:\Users\Shared\RiderProjects\anivision-release.jks `
+  -keystore C:\Users\Shared\RiderProjects\anivision\anivision-release.jks `
   -alias anivision -keyalg RSA -keysize 4096 -validity 10000
 ```
 
@@ -28,6 +30,20 @@ cd src/android
 
 Output: `app/build/outputs/apk/release/app-release.apk`. Without `keystore.properties` the build
 still succeeds but produces `app-release-unsigned.apk`, which phones refuse to install.
+
+## Build an app bundle for Play
+
+```powershell
+cd src/android
+./gradlew bundleRelease
+```
+
+Output: `app/build/outputs/bundle/release/app-release.aab`. Unlike `assembleRelease`, this **fails**
+when `keystore.properties` is missing, so you cannot upload an unsigned bundle by accident.
+
+Before every upload, raise `versionCode` in `app/build.gradle.kts` (Play rejects a `versionCode` it
+has already seen) and keep `app/build/outputs/mapping/release/mapping.txt` for that version, so
+crash traces can be de-obfuscated (Play Console accepts it with the upload).
 
 ## Check before sharing
 
