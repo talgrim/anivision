@@ -14,10 +14,14 @@ the live console.
 - [ ] Back up `anivision-release.jks` and its passwords. Consider Play App Signing, so the key you
       upload with can be reset if it is lost.
 - [ ] Run the checklist in `RELEASING.md` on a second phone.
-- [ ] Host the privacy policy below at a public URL (a GitHub Pages page or a repo file URL works)
-      and paste that URL into the console.
-- [ ] Take screenshots: Dog view, Cat view, Split, the blur and night boost controls, a gallery
-      photo with the divider. Phone screenshots only; the app has no tablet layout work.
+- [x] Host the privacy policy below at a public URL: https://talgrim.dev/anivision-privacy (source:
+      `site/anivision-privacy.html` in `talgrim/talgrimdotdev`). Paste that URL into the console.
+      Make sure `privacy@talgrim.dev` receives mail.
+- [x] Store icon and feature graphic: `store/icon-512.png` and `store/feature-graphic-1024x500.png`
+      (regenerate with `store/generate_graphics.py`).
+- [ ] Screenshots: Split, Dog and Human are in `store/screenshots/`. Optionally add the Cat view, the
+      blur and night boost controls and a gallery photo with the divider (Play takes 2 to 8). Phone
+      screenshots only; the app has no tablet layout work.
 
 ## Store listing
 
@@ -55,7 +59,7 @@ the live console.
 
 **Category:** Photography (alternative: Entertainment). **Tags:** Photography, Education.
 
-**Contact email:** the developer email you want shown publicly.
+**Contact email:** `privacy@talgrim.dev` (the same address as in the privacy policy; shown publicly).
 
 ## Data safety form
 
@@ -83,19 +87,19 @@ the remembered view pair is not copied to the cloud either.
   policies apply, so avoid it unless you intend that.
 - **Ads:** no. **App access:** all functionality is available without a login.
 - **Government, financial, health apps:** none of these apply.
-- **Store listing assets:** 512×512 icon (export from the launcher icon), a 1024×500 feature
-  graphic, and at least two phone screenshots.
+- **Store listing assets:** 512×512 icon, a 1024×500 feature graphic and at least two phone
+  screenshots, all in `store/` (see the checklist above).
 
 ## Privacy policy
 
-Host this text at a public URL and use that URL in the console and, if you like, in the About
-screen. Replace the bracketed parts.
+Live at https://talgrim.dev/anivision-privacy. Use that URL in the console and, if you like, in the
+About screen. The text below mirrors the page; when you change one, change the other and the date.
 
 > **Privacy policy for AniVision**
 >
-> Last updated: [date]
+> Last updated: 2026-11-14
 >
-> AniVision ("the app") is made by [your name]. This policy explains what the app does with your
+> AniVision ("the app") is made by Talgrim. This policy explains what the app does with your
 > information.
 >
 > **Information we collect.** None. The app has no account, no analytics, no advertising and no
@@ -117,4 +121,4 @@ screen. Replace the bracketed parts.
 > **Changes.** If this policy changes, the new version will be posted at this address with a new
 > date.
 >
-> **Contact.** [email address]
+> **Contact.** privacy@talgrim.dev
