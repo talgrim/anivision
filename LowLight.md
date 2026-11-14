@@ -59,7 +59,7 @@ Pipeline order: decode sRGB, blur, **shadow lift**, matrix, clamp, encode.
 
 ## Android decisions
 
-- **Which pixels:** the filtered side only. The Normal side of a split, and the whole Normal view,
+- **Which pixels:** the filtered side only. The Human side of a split, and the whole Human view,
   are untouched (the same rule as the blur and the matrix).
 - **Where in the shader:** in the final pass (the colour pass, or the vertical blur pass), after the
   blur and before the matrix. The horizontal blur pass is not touched.
@@ -77,7 +77,7 @@ Pipeline order: decode sRGB, blur, **shadow lift**, matrix, clamp, encode.
   GPU can be checked against the same numbers.
 - JVM: `VisionShadersTest` checks that the uniform and the lift code are present.
 - Instrumented: `GpuGoldenVectorTest` renders the golden inputs with the lift on, checks the split
-  (Normal side unchanged), and `StillImageFilterTest` checks that a photo matches the preview.
+  (Human side unchanged), and `StillImageFilterTest` checks that a photo matches the preview.
 
 ## Not done (later, if ever)
 
