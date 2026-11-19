@@ -1,5 +1,16 @@
 # Building a release APK
 
+## Automated releases
+
+Merging `develop` into `main` makes the `Release` workflow (release-please) open a release PR that bumps
+`appVersion` in `app/build.gradle.kts` and writes `CHANGELOG.md` from the Conventional Commits (`feat` = minor,
+`fix` = patch, `!` = major). `versionCode` is derived from the version (`major*10000 + minor*100 + patch`).
+Merging the release PR tags the release, builds the signed APK in CI and publishes it to
+[wip.talgrim.dev](https://wip.talgrim.dev), so it shows up on the download links too. Merge `main` back
+into `develop` afterwards. Repository secrets: `WIP_FLY_API_TOKEN`, `ANDROID_KEYSTORE_BASE64`,
+`KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`; the repository setting "Allow GitHub Actions to create and
+approve pull requests" must be on. The rest of this file is for building by hand.
+
 A release APK is shrunk (R8) and signed with your own key, so you can hand it to other people.
 Debug APKs (`./gradlew assembleDebug`) also install, but are signed with a throwaway debug key.
 
@@ -41,8 +52,8 @@ cd src/android
 Output: `app/build/outputs/bundle/release/app-release.aab`. Unlike `assembleRelease`, this **fails**
 when `keystore.properties` is missing, so you cannot upload an unsigned bundle by accident.
 
-Before every upload, raise `versionCode` in `app/build.gradle.kts` (Play rejects a `versionCode` it
-has already seen) and keep `app/build/outputs/mapping/release/mapping.txt` for that version, so
+Every release gets a higher `versionCode` automatically (it is derived from the version, see below), which
+is what Play requires. Keep `app/build/outputs/mapping/release/mapping.txt` for that version, so
 crash traces can be de-obfuscated (Play Console accepts it with the upload).
 
 ## Check before sharing
