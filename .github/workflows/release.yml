@@ -26,6 +26,8 @@ jobs:
       - uses: googleapis/release-please-action@v4
         id: rp
         with:
+          # without this the release PR goes to the repo's default branch (develop)
+          target-branch: ${{ github.ref_name }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
