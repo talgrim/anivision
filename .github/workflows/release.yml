@@ -59,6 +59,8 @@ jobs:
 
   apk:
     needs: plan
+    # !cancelled(): a skipped release-please (manual run) would otherwise skip this job too
+    if: ${{ !cancelled() && needs.plan.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
