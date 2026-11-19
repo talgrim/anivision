@@ -7,7 +7,7 @@ plugins {
 }
 
 // release-please bumps this line; versionCode is derived so it always grows with the version.
-val appVersion = "1.1.0" // x-release-please-version
+val appVersion = "1.2.0" // x-release-please-version
 val appVersionCode = appVersion.split(".").map { it.toInt() }.let { (major, minor, patch) -> major * 10000 + minor * 100 + patch }
 
 // Release signing secrets live in src/android/keystore.properties (git-ignored, see RELEASING.md).
