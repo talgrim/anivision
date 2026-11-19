@@ -1,0 +1,18 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "2f1a623",
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "package-name": "AniVision",
+      "include-component-in-tag": false,
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "src/android/app/build.gradle.kts"
+        }
+      ]
+    }
+  }
+}
