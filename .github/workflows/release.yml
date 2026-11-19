@@ -6,6 +6,12 @@ name: Release
 on:
   push:
     branches: [main]
+  # re-run the build and publish for a tag that already exists (e.g. after a failed run)
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to build and publish, e.g. v1.2.0
+        required: true
 
 permissions:
   contents: write
@@ -17,6 +23,7 @@ concurrency:
 
 jobs:
   release-please:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.rp.outputs.release_created }}
@@ -31,16 +38,34 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
-  apk:
+  # the tag to build: the one release-please just created, or the one given by hand
+  plan:
     needs: release-please
-    if: needs.release-please.outputs.release_created == 'true'
+    if: ${{ !cancelled() && (needs.release-please.outputs.release_created == 'true' || github.event_name == 'workflow_dispatch') }}
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.p.outputs.tag }}
+      version: ${{ steps.p.outputs.version }}
+    steps:
+      - id: p
+        env:
+          RP_TAG: ${{ needs.release-please.outputs.tag_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          tag="${RP_TAG:-$INPUT_TAG}"
+          [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "bad tag: $tag" >&2; exit 1; }
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+
+  apk:
+    needs: plan
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ needs.release-please.outputs.tag_name }}
+          ref: ${{ needs.plan.outputs.tag }}
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -77,12 +102,13 @@ jobs:
         run: |
           apk=src/android/app/build/outputs/apk/release/app-release.apk
           [ -f "$apk" ] || { echo "no signed APK (unsigned builds are named app-release-unsigned.apk)" >&2; ls src/android/app/build/outputs/apk/release; exit 1; }
-          "$ANDROID_HOME"/build-tools/*/apksigner verify "$apk"
+          apksigner="$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -n 1)"
+          "$apksigner" verify "$apk"
       - uses: talgrim/fly-volume-publish@v1
         with:
           file: src/android/app/build/outputs/apk/release/app-release.apk
           product: anivision
-          version: ${{ needs.release-please.outputs.version }}
+          version: ${{ needs.plan.outputs.version }}
           suffix: .apk
           fly-app: wip-talgrim
           base-url: https://wip.talgrim.dev
