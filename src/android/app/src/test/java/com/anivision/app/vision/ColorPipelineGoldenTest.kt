@@ -6,7 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ColorPipelineGoldenTest {
-    private val profiles = mapOf("v2" to AnimalVision.DOG_V2, "v0" to AnimalVision.DOG_V0)
+    private val profiles = mapOf("v2" to AnimalVision.DOG_V2, "v0" to AnimalVision.DOG_V0, "cat" to AnimalVision.CAT_V2)
 
     @Test
     fun srgbTransferRoundTrips() {

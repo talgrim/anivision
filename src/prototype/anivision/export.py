@@ -16,6 +16,8 @@ Matrix conventions (the usual source of Android bugs):
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import numpy as np
 
 from .acuity import (
@@ -31,20 +33,41 @@ from .colorspace import linear_to_srgb, srgb_to_linear
 from .derive import DEFAULT_ANCHOR_NM, derive
 from .gamut import LUMA
 from .lowlight import STRONGEST_GAMMA, SUGGESTED_GAMMA
-from .profiles import DOG
+from .profiles import CAT, DOG, Profile
 from .simulate import GAMUT_TOLERANCE, apply_matrix, simulate
 from .spectra import DEFAULT_PRIMARY_CENTERS, DEFAULT_PRIMARY_SIGMA
 from .variants import get_variant
 
 SCHEMA_VERSION = 1
 DEFAULT_VARIANT = "v2"
-EXPORT_VARIANTS = ("v2", "v0")  # default first; the Android code reads the matrix as data
+
+
+@dataclass(frozen=True)
+class ExportedProfile:
+    """One animal in the export: its parameters and the variant ids exported for it."""
+
+    profile: Profile
+    default_variant: str
+    variants: tuple[str, ...]  # default first
+
+
+EXPORT_PROFILES: dict[str, ExportedProfile] = {
+    "dog": ExportedProfile(DOG, "v2", ("v2", "v0")),
+    "cat": ExportedProfile(CAT, "cat", ("cat",)),
+}
+# Every exported variant id, dog first (the Android code reads the matrices as data).
+EXPORT_VARIANTS = tuple(v for ep in EXPORT_PROFILES.values() for v in ep.variants)
+# The variants derived from cone sensitivities (V0 is a published matrix), and their profile.
+DERIVED_VARIANT_PROFILES: dict[str, Profile] = {"v2": DOG, "cat": CAT}
+# Name stem of each variant's Kotlin / GLSL constants.
+EXPORT_CONSTANTS = {"v2": "DOG_V2", "v0": "DOG_V0", "cat": "CAT_V2"}
 GOLDEN_SEED = 20261112
 RANDOM_GOLDEN_COUNT = 40
 SIGMA_EXAMPLE_EDGES = (640, 1080, 1440, 1920)
 
 CAVEAT = (
-    "Approximation of what a dog's cones capture, not of what a dog subjectively experiences. "
+    "Approximation of what a dog's or cat's cones capture, not of what the animal subjectively "
+    "experiences. "
     "Assumes sRGB input and a modelled display (Gaussian primaries); see src/prototype/README.md."
 )
 
@@ -52,6 +75,8 @@ VARIANT_DESCRIPTIONS = {
     "v2": "Dog-specific projection derived from Govardovskii cone sensitivities (S 429 / L 555 nm), "
     "475 nm anchor. Shipped default (NOTES.md, Phase 3 decision).",
     "v0": "Vienot, Brettel & Mollon (1999) deuteranopia matrix for linear sRGB. Fallback.",
+    "cat": "Cat-specific projection derived from Govardovskii cone sensitivities (S 450 / L 555 nm), "
+    "475 nm anchor. Approximate: the cat parameters are not verified against primary papers.",
 }
 
 # Skin tones are common reference values (not measured), spread from light to dark.
@@ -122,22 +147,35 @@ def matrices() -> dict[str, np.ndarray]:
 # --------------------------------------------------------------------------- matrix.json
 
 
-def matrix_document(generator: dict) -> dict:
-    """The ``export/matrix.json`` contents. ``generator`` records the git commit and dirty flag."""
-    mats = matrices()
-    d = derive()
-    variants = {
-        name: {"description": VARIANT_DESCRIPTIONS[name], "matrix": mats[name].tolist()}
-        for name in EXPORT_VARIANTS
-    }
-    variants["v2"]["derivation"] = {
-        "s_peak_nm": DOG.s_peak_nm,
-        "l_peak_nm": DOG.l_peak_nm,
+def _derivation_document(profile: Profile) -> dict:
+    return {
+        "s_peak_nm": profile.s_peak_nm,
+        "l_peak_nm": profile.l_peak_nm,
         "anchor_nm": DEFAULT_ANCHOR_NM,
         "display_primary_centers_nm": list(DEFAULT_PRIMARY_CENTERS),
         "display_primary_sigma_nm": DEFAULT_PRIMARY_SIGMA,
-        "neutral_point_nm": d.neutral_point_nm,
+        "neutral_point_nm": derive(profile).neutral_point_nm,
     }
+
+
+def _profile_document(exported: ExportedProfile) -> dict:
+    variants = {}
+    for name in exported.variants:
+        entry = {"description": VARIANT_DESCRIPTIONS[name], "matrix": get_variant(name).tolist()}
+        if name in DERIVED_VARIANT_PROFILES:
+            entry["derivation"] = _derivation_document(DERIVED_VARIANT_PROFILES[name])
+        variants[name] = entry
+    return {
+        "default_variant": exported.default_variant,
+        "acuity_ratio": exported.profile.acuity_ratio,
+        "shadow_gamma": exported.profile.shadow_gamma,
+        "peripheral_blur": exported.profile.peripheral_blur,
+        "variants": variants,
+    }
+
+
+def matrix_document(generator: dict) -> dict:
+    """The ``export/matrix.json`` contents. ``generator`` records the git commit and dirty flag."""
     return {
         "schema_version": SCHEMA_VERSION,
         "caveat": CAVEAT,
@@ -157,12 +195,7 @@ def matrix_document(generator: dict) -> dict:
             "encode linear -> sRGB",
         ],
         "gamut": {"policy": "clip", "tolerance": GAMUT_TOLERANCE},
-        "profiles": {
-            "dog": {
-                "default_variant": DEFAULT_VARIANT,
-                "variants": variants,
-            }
-        },
+        "profiles": {animal: _profile_document(ep) for animal, ep in EXPORT_PROFILES.items()},
         "acuity": acuity_document(),
         "shadow_lift": shadow_lift_document(),
     }
@@ -187,6 +220,15 @@ def acuity_document() -> dict:
         "acuity_ratio": defaults.acuity_ratio,
         "hfov_deg": defaults.hfov_deg,
         "hfov_applies_to": "the long edge of the frame",
+        "peripheral_blur": {
+            "note": "artistic; per-profile 'peripheral_blur' (0 = uniform blur). Blur grows towards the "
+            "frame edges, the way acuity falls away from the centre of the retina",
+            "formula": "sigma_local = sigma_px * (1 + peripheral_blur * r2)",
+            "r2": "((x - cx)^2 + (y - cy)^2) / (cx^2 + cy^2), pixel centres, cx = (width - 1) / 2, "
+            "cy = (height - 1) / 2: 0 at the frame centre, 1 in the corners",
+            "reference_implementation": "acuity.peripheral_blur blends 5 uniform Gaussian blurs evenly "
+            "spaced in r2 with linear weights; a shader may evaluate the Gaussian per pixel instead",
+        },
         "default_exaggeration": DEFAULT_EXAGGERATION,
         "max_exaggeration": MAX_EXAGGERATION,
         "sigma_px_examples": [
@@ -212,6 +254,8 @@ def shadow_lift_document() -> dict:
         "formula": "rgb * min(Y^(gamma - 1), max(1, 1 / max(r, g, b))) where Y = clamp(dot(luma, rgb), 1e-6, 1); "
         "scale is 1 when Y >= 1; the cap keeps every channel at or below 1",
         "luma": [float(v) for v in LUMA],
+        "inherent": "a profile's 'shadow_gamma' (1 = none) is always applied to that animal's view; "
+        "the effective gamma is min(user gamma, shadow_gamma), i.e. the stronger lift, never stacked",
         "off_gamma": 1.0,
         "suggested_gamma": SUGGESTED_GAMMA,
         "strongest_gamma": STRONGEST_GAMMA,
@@ -233,7 +277,7 @@ def _header(comment: str, generator: dict) -> str:
 def kotlin_snippet(generator: dict) -> str:
     out = [_header("//", generator)]
     for name, m in matrices().items():
-        const = f"DOG_{name.upper()}"
+        const = EXPORT_CONSTANTS[name]
         out.append(
             f"/** {VARIANT_DESCRIPTIONS[name]}\n"
             f" *  3x3, ROW-major, acts on LINEAR sRGB column vectors: out = M * rgb. */\n"
@@ -248,13 +292,23 @@ def kotlin_snippet(generator: dict) -> str:
     out.append(
         "// Acuity blur (linear light, Gaussian). Off by default in the app.\n"
         f"const val ACUITY_K = {a['k']:.9g}f\n"
-        f"const val ACUITY_RATIO = {a['acuity_ratio']:.9g}f\n"
+        f"const val ACUITY_RATIO = {a['acuity_ratio']:.9g}f  // dog; see the per-animal ratios below\n"
         f"const val ACUITY_HFOV_DEG = {a['hfov_deg']:.9g}f  // along the frame's long edge\n"
-        f"const val ACUITY_DEFAULT_EXAGGERATION = {a['default_exaggeration']:.9g}f\n"
+        + "".join(
+            f"const val {animal.upper()}_ACUITY_RATIO = {ep.profile.acuity_ratio:.9g}f\n"
+            f"const val {animal.upper()}_PERIPHERAL_BLUR = {ep.profile.peripheral_blur:.9g}f\n"
+            f"const val {animal.upper()}_SHADOW_GAMMA = {ep.profile.shadow_gamma:.9g}f\n"
+            for animal, ep in EXPORT_PROFILES.items()
+        )
+        + f"const val ACUITY_DEFAULT_EXAGGERATION = {a['default_exaggeration']:.9g}f\n"
         f"const val ACUITY_MAX_EXAGGERATION = {a['max_exaggeration']:.9g}f\n\n"
         "/** Gaussian sigma in pixels for a frame whose long edge is [longEdgePx] pixels. */\n"
-        "fun acuitySigmaPx(longEdgePx: Float, exaggeration: Float = ACUITY_DEFAULT_EXAGGERATION): Float =\n"
-        "    ACUITY_K * (ACUITY_RATIO / 60f / 2f) * (longEdgePx / ACUITY_HFOV_DEG) * exaggeration\n\n"
+        "fun acuitySigmaPx(\n"
+        "    longEdgePx: Float,\n"
+        "    exaggeration: Float = ACUITY_DEFAULT_EXAGGERATION,\n"
+        "    acuityRatio: Float = ACUITY_RATIO,\n"
+        "): Float =\n"
+        "    ACUITY_K * (acuityRatio / 60f / 2f) * (longEdgePx / ACUITY_HFOV_DEG) * exaggeration\n\n"
         "// Shadow lift (artistic, off by default): rgb *= min(Y^(gamma - 1), max(1, 1 / max(r, g, b))),\n"
         "// Y = luma(rgb) clamped to [1e-6, 1], scale 1 when Y >= 1; the cap keeps channels at or below 1.\n"
         f"const val SHADOW_LIFT_OFF_GAMMA = {s['off_gamma']:.9g}f\n"
@@ -268,12 +322,12 @@ def glsl_snippet(generator: dict) -> str:
     out = [_header("//", generator)]
     out.append(
         "// GLSL mat3(...) takes its arguments COLUMN-major. Each block shows the row-major matrix.\n"
-        "// Use as: vec3 outLinear = DOG_V2 * inLinear;   (declare `precision highp float;` in the shader)\n"
+        "// Use as: vec3 outLinear = DOG_V2 * inLinear;   (or CAT_V2)   (declare `precision highp float;` in the shader)\n"
     )
     for name, m in matrices().items():
         rows = "\n".join("//   [" + "  ".join(f"{v: .7f}" for v in row) + " ]" for row in m)
         cols = _column_major(m)
-        const = f"DOG_{name.upper()}"
+        const = EXPORT_CONSTANTS[name]
         out.append(
             f"// {name}: {VARIANT_DESCRIPTIONS[name]}\n{rows}\n"
             f"const mat3 {const} = mat3(\n"

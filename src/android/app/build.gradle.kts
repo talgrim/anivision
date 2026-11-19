@@ -6,13 +6,27 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+// release-please bumps this line; versionCode is derived so it always grows with the version.
+val appVersion = "1.1.0" // x-release-please-version
+val appVersionCode = appVersion.split(".").map { it.toInt() }.let { (major, minor, patch) -> major * 10000 + minor * 100 + patch }
+
 // Release signing secrets live in src/android/keystore.properties (git-ignored, see RELEASING.md).
-// Without that file the release build still works but is left unsigned.
+// Without that file assembleRelease still works but leaves the APK unsigned; bundleRelease (the
+// Play Store upload) fails instead, so an unsigned bundle cannot be produced by accident.
 val keystoreProperties: Properties? = providers
     .fileContents(rootProject.layout.projectDirectory.file("keystore.properties"))
     .asText
     .map { text -> Properties().apply { load(StringReader(text)) } }
     .orNull
+
+gradle.taskGraph.whenReady {
+    if (keystoreProperties == null && hasTask(":app:bundleRelease")) {
+        throw GradleException(
+            "bundleRelease needs release signing: create src/android/keystore.properties " +
+                "(copy keystore.properties.example, see RELEASING.md).",
+        )
+    }
+}
 
 android {
     namespace = "com.anivision.app"
@@ -24,8 +38,8 @@ android {
         applicationId = "com.anivision.app"
         minSdk = 29
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = appVersionCode
+        versionName = appVersion
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

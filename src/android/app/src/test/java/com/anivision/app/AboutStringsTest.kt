@@ -24,14 +24,21 @@ class AboutStringsTest {
 
     @Test
     fun everyAboutSectionHasATitleAndABody() {
-        for (section in listOf("colour", "blur", "night", "privacy")) {
+        for (section in listOf("colour", "blur", "night", "cat", "privacy")) {
             assertTrue("about_${section}_title is empty", string("about_${section}_title").isNotBlank())
             assertTrue("about_$section is empty", string("about_$section").isNotBlank())
         }
     }
 
     @Test
-    fun nightBoostIsNotPresentedAsDogNightVision() {
+    fun nightBoostIsNotPresentedAsDogOrCatNightVision() {
         assertTrue(string("about_night").contains("not a model", ignoreCase = true))
+    }
+
+    @Test
+    fun theCatSectionSaysTheCatAndDogViewsAreSimilarAndTheExtrasAreNotMeasurements() {
+        val body = string("about_cat")
+        assertTrue(body.contains("very similar"))
+        assertTrue(body.contains("not measurements"))
     }
 }

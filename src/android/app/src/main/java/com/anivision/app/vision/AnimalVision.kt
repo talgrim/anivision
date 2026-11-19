@@ -28,4 +28,25 @@ object AnimalVision {
 
     /** The profile the app uses for "dog". */
     val DOG: VisionProfile = DOG_V2
+
+    /**
+     * Cat-specific projection from Govardovskii cone sensitivities (S 450 / L 555 nm), 475 nm anchor.
+     * The cat numbers are approximate and not verified against primary papers. The shadow lift
+     * (0.85) and peripheral blur (1.0) are artistic stand-ins with no source: the lift for the
+     * cat's better dim-light vision, the blur for acuity falling off towards the frame edges.
+     */
+    val CAT_V2 = VisionProfile(
+        id = "cat",
+        rowMajor = floatArrayOf(
+            0.32865444f, 0.903226687f, -0.231881127f,
+            0.242554167f, 0.673668212f, 0.0837776207f,
+            -0.00672457442f, 0.00904722611f, 0.997677348f,
+        ),
+        acuityRatio = 3.5f,
+        shadowGamma = 0.85f,
+        peripheralBlur = 1f,
+    )
+
+    /** The profile the app uses for "cat". */
+    val CAT: VisionProfile = CAT_V2
 }

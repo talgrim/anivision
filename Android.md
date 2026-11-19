@@ -2,7 +2,7 @@
 
 ## 1. Context
 
-**Goal:** An Android app that shows the live camera view as a dog would see it, i.e. with canine color vision. Photo/video capture and other animals (cat, etc.) come later.
+**Goal:** An Android app that shows the live camera view as a dog would see it, i.e. with canine color vision. Photo capture and a cat view are in; video comes later.
 
 **Why Android first:** Building for iOS needs a Mac and Xcode (the paid Apple Developer Program is only needed to distribute or to run on-device beyond 7 days). Android needs neither. A one-time $25 Google Play fee applies only at publishing time.
 
@@ -88,12 +88,14 @@ anivision/
                 ├── java/com/anivision/app/
                 │   ├── MainActivity.kt
                 │   ├── camera/        # CameraX setup, permission handling
-                │   ├── render/        # GL renderer / shader pipeline
-                │   ├── vision/        # AnimalVision profiles (matrix, blur, etc.)
-                │   └── ui/            # Compose screens and theme
-                ├── assets/shaders/    # *.glsl (vertex + fragment)
+                │   ├── photo/         # capture, decode (EXIF), offscreen filter, MediaStore save, share, split captions
+                │   ├── vision/        # AnimalVision profiles, settings, acuity and night-boost maths
+                │   │   └── gl/        # EGL, shader programs, renderer, CameraX surface processor, still-image filter
+                │   └── ui/            # Compose screens, controls and theme
                 └── res/
 ```
+
+The shaders are not separate `.glsl` assets: they are string constants in `vision/gl/VisionShaders.kt`, kept in step with `export/animal_vision.glsl` by a unit test. The layout above is what exists today (it replaced an earlier plan with `render/` and `assets/shaders/` directories).
 
 The Android project lives in `src/android/`, next to `src/prototype/`, in the same repo. Git ignore rules live only in the root `.gitignore`; the project has no `.gitignore` files of its own.
 
@@ -103,7 +105,7 @@ The working copy is the current directory (`C:\Users\Shared\RiderProjects\anivis
 
 Needed:
 
-- JDK 17 (bundled with Android Studio)
+- A JDK. Android Studio bundles one, and `gradle/gradle-daemon-jvm.properties` asks Gradle for a specific toolchain (currently 25), which the foojay plugin downloads on the first build, so that build needs network access. There is no `java` on the WSL PATH, so run Gradle builds from Windows
 - Android Studio (latest stable) with the SDK Platform, Build-Tools and Platform-Tools
 - A **physical Android device** with USB debugging (the test device runs Android 11, API 30, which is above minSdk 29). The emulator's virtual camera is poor for judging color, so real hardware is strongly preferred.
 - Python 3.10+ with `numpy`, `pillow` for the prototype
@@ -128,14 +130,20 @@ Needed:
 5. Verify a live, unfiltered preview on the device.
 6. Commit.
 
-### Phase 3: Quick MVP filter
+### Phase 3: Quick MVP filter *(superseded by Phase 4)*
+
+This phase was the first, throwaway version. The `ColorMatrixColorFilter` code was removed when the GPU pipeline of Phase 4 replaced it, so no `ColorMatrix` code exists in the app any more. The steps are kept as the record of the original plan.
+
 1. Create `vision/AnimalVision.kt`: a data class holding the 3x3 matrix (and later blur radius, brightness) plus a `DOG` profile. Take the matrix from the prototype export, not from memory: `DOG_V2_COLOR_MATRIX_4X5` (default) or `DOG_V0_COLOR_MATRIX_4X5` (fallback) in `src/prototype/export/AnimalVisionConstants.kt.txt`. Keep the matrix as data so the default can change without a code change (`export/matrix.json` holds both, plus the generating commit).
 2. Set `PreviewView` to `ImplementationMode.COMPATIBLE` (TextureView) and apply a `ColorMatrixColorFilter` via the view's layer paint (`setLayerType(LAYER_TYPE_HARDWARE, paint)`).
 3. Add a toggle: normal vs. dog view.
 4. Verify on-device against the Python prototype output (`python -m anivision in.jpg out.png --variant v2`). Color will be slightly off, since `ColorMatrix` runs on gamma-encoded values. This is acceptable for the MVP.
 5. Commit.
 
-### Phase 4: Proper GPU pipeline
+### Phase 4: Proper GPU pipeline *(done)*
+
+Implemented as a CameraX `SurfaceProcessor` / `CameraEffect` (`VisionSurfaceProcessor`, `VisionEffect`), drawing with `VisionRenderer` and the shaders in `VisionShaders.kt`. The same renderer filters still photos offscreen (`StillImageFilter`), so saved photos match the preview. The split is drawn as two scissored passes, one per side, each with its own profile. The GPU golden-vector check is the instrumented test `GpuGoldenVectorTest`.
+
 1. Replace the color-filter hack with a CameraX `SurfaceProcessor` / `CameraEffect` (or a custom `GLSurfaceView` fed by a `SurfaceTexture`).
 2. Write the fragment shader using `samplerExternalOES`:
    - sample camera texture
@@ -153,13 +161,13 @@ Needed:
 - Sliders for blur (acuity) and low-light boost. *(Done, PRs #8 and #10; night boost is the artistic shadow lift described in `LowLight.md`.)*
 - Photo capture with the effect baked in, saved via MediaStore. *(Done, PR #6; a plain `ImageCapture` is filtered offscreen rather than using an effect.)*
 - Video recording with the effect (`VideoCapture` plus effect). *(Out of v1 scope.)*
-- Additional profiles (cat, etc.) behind a selector. *(Out of v1 scope.)*
+- Additional profiles (cat) behind a selector. *(Done: Human / Dog / Cat; a cog button chooses what the left and right buttons of the Left | Split | Right toggle show, the gallery import has the same toggle, and the choice is remembered. The cat carries artistic extras: a built-in shadow lift, peripheral blur and, where the phone has an ultra-wide lens, the widest zoom. See `Python.md` and `LowLight.md`.)*
 - Gallery import: apply the filter to existing photos. *(Done, PR #7.)*
 
 ### Phase 6: Polish and release prep
 - App icon, name, theme (light/dark). *(Icon and name done: an eye with a split iris. Theme: own palette from the icon, light and dark schemes, no dynamic colour.)*
 - About screen with the "approximation" disclaimer and short science notes. *(Done.)*
-- Release build config (R8/minify, signing config kept out of git), privacy policy (camera use only, no data collected), Play Console listing. *(Signing and R8 done; R8 needs a signed-release device test. Privacy text is in the About screen. Play Console listing not started.)*
+- Release build config (R8/minify, signing config kept out of git), privacy policy (camera use only, no data collected), Play Console listing. *(Signing and R8 done and verified on a device, see section 7. Privacy text is in the About screen. The Play listing is drafted in `src/android/PLAY_LISTING.md`; a hosted privacy policy URL and the store graphics are still to do.)*
 
 ## 6. Python prototype (done, merged in PR #1)
 
@@ -172,7 +180,7 @@ The prototype validated the look on still photos before the shader work. Details
 
 ## 7. Verification checklist
 
-- [ ] Project builds from a clean clone (`./gradlew assembleDebug`)
+- [ ] Project builds from a clean clone (`./gradlew assembleDebug`) (not yet checked)
 - [x] Camera permission flow works (grant, deny, deny permanently)
 - [x] Live preview runs at about 30 fps with no visible stutter on a mid-range device (verified in every mode tried on the test phone)
 - [ ] Red/green scenes collapse to yellow/brown as expected; blues and yellows stay distinct; grays stay neutral
@@ -188,4 +196,4 @@ The prototype validated the look on still photos before the shader work. Details
 2. **Working copy:** the current directory (Windows filesystem, also reachable from WSL).
 3. **Test device:** one physical phone on Android 11 (API 30).
 4. **Video recording:** out of v1 scope for now; photo capture comes in Phase 5.
-5. **Other animals:** dog only for now. Cat stays a later extension.
+5. **Other animals:** dog and cat. The cat's colour and blur are very similar to the dog's, so the cat adds artistic extras (built-in shadow lift, peripheral blur, wide-angle zoom); the About screen says so. Cat numbers are approximate and not verified against primary papers.

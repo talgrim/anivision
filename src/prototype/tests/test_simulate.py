@@ -121,6 +121,55 @@ def test_cli_defaults_to_the_shipped_variant():
     np.testing.assert_array_equal(get_variant(args.variant), DOG_V2)
 
 
+def test_cli_cat_variant_uses_the_cat_acuity_by_default(tmp_path, capsys):
+    src, dst = tmp_path / "in.png", tmp_path / "out.png"
+    Image.fromarray(np.random.default_rng(2).integers(0, 256, (40, 60, 3), dtype=np.uint8)).save(src)
+
+    def blur_sigma(*extra):
+        assert cli.main([str(src), str(dst), "--acuity", *extra]) == 0
+        return float(capsys.readouterr().err.split("blur sigma ")[1].split(" px")[0])
+
+    cat = blur_sigma("--variant", "cat")
+    assert cat == pytest.approx(blur_sigma("--variant", "v2", "--acuity-ratio", "3.5"), abs=0.01)
+    assert cat < blur_sigma("--variant", "v2")  # the cat resolves slightly finer detail than the dog
+
+
+def _cli_mean(tmp_path, *extra):
+    src, dst = tmp_path / "in.png", tmp_path / "out.png"
+    Image.fromarray(np.full((30, 40, 3), 40, dtype=np.uint8)).save(src)
+    assert cli.main([str(src), str(dst), *extra]) == 0
+    with Image.open(dst) as im:
+        return float(np.asarray(im).mean())
+
+
+def test_cli_cat_carries_its_shadow_lift_unless_told_otherwise(tmp_path):
+    dog = _cli_mean(tmp_path, "--variant", "v2")
+    cat = _cli_mean(tmp_path, "--variant", "cat")
+    plain_cat = _cli_mean(tmp_path, "--variant", "cat", "--no-traits")
+    assert cat > plain_cat + 5  # the built-in lift brightens a dark scene
+    assert plain_cat == pytest.approx(dog, abs=2.0)  # without it the cat is as bright as the dog
+
+
+def test_cli_uses_the_stronger_of_the_user_and_built_in_lift(tmp_path):
+    default = _cli_mean(tmp_path, "--variant", "cat")
+    assert _cli_mean(tmp_path, "--variant", "cat", "--shadow-lift", "0.9") == default  # weaker: ignored
+    assert _cli_mean(tmp_path, "--variant", "cat", "--shadow-lift", "0.7") > default + 2  # stronger wins
+
+
+def test_cli_periphery_flag_overrides_the_built_in_blur(tmp_path):
+    src, dst = tmp_path / "in.png", tmp_path / "out.png"
+    stripes = np.zeros((60, 80, 3), dtype=np.uint8)
+    stripes[:, ::2] = 255
+    Image.fromarray(stripes).save(src)
+
+    def corner_std(*extra):
+        assert cli.main([str(src), str(dst), "--variant", "cat", "--acuity", "--exaggeration", "4", *extra]) == 0
+        with Image.open(dst) as im:
+            return float(np.asarray(im).astype(float)[:8, :8].std())
+
+    assert corner_std() < corner_std("--periphery", "0")  # the built-in periphery softens the corner
+
+
 def test_cli_acuity_gamut_and_lift_flags(tmp_path, capsys):
     src, dst = tmp_path / "in.png", tmp_path / "out.png"
     Image.fromarray(np.random.default_rng(0).integers(0, 256, (40, 60, 3), dtype=np.uint8)).save(src)

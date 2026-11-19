@@ -1,4 +1,4 @@
-"""Command line: ``python -m anivision in.jpg out.jpg [--variant v0|v1|v2]`` (default v2)."""
+"""Command line: ``python -m anivision in.jpg out.jpg [--variant v0|v1|v2|cat]`` (default v2)."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from PIL import Image, ImageOps
 from .acuity import DEFAULT_EXAGGERATION, MAX_EXAGGERATION, AcuityParams
 from .gamut import GAMUT_POLICIES
 from .simulate import simulate
-from .variants import VARIANT_IDS, get_variant
+from .variants import VARIANT_IDS, get_variant, profile_for
 
 
 def load_rgb(path: str) -> np.ndarray:
@@ -29,8 +29,8 @@ def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="python -m anivision",
         description=(
-            "Simulate what a dog's cones capture. This is an approximation, "
-            "not what a dog subjectively experiences."
+            "Simulate what a dog's or cat's cones capture. This is an approximation, "
+            "not what the animal subjectively experiences."
         ),
     )
     p.add_argument("input", help="input image")
@@ -41,7 +41,7 @@ def build_parser() -> argparse.ArgumentParser:
         choices=list(VARIANT_IDS),
         help="colour transform variant (default: %(default)s)",
     )
-    p.add_argument("--acuity", action="store_true", help="also apply the dog acuity blur")
+    p.add_argument("--acuity", action="store_true", help="also apply the animal's acuity blur")
     p.add_argument(
         "--exaggeration",
         type=float,
@@ -50,7 +50,12 @@ def build_parser() -> argparse.ArgumentParser:
         f"suggested maximum {MAX_EXAGGERATION:g})",
     )
     p.add_argument("--hfov", type=float, default=70.0, help="camera field of view along the long edge, degrees")
-    p.add_argument("--acuity-ratio", type=float, default=3.75, help="dog/human acuity ratio (20/75 -> 3.75)")
+    p.add_argument(
+        "--acuity-ratio",
+        type=float,
+        default=None,
+        help="animal/human acuity ratio (dog 20/75 -> 3.75); default: the chosen variant's animal",
+    )
     p.add_argument(
         "--gamut",
         default="clip",
@@ -62,7 +67,20 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         default=1.0,
         metavar="GAMMA",
-        help="artistic shadow lift: luminance gamma in (0, 1], 1 = off (suggested 0.85, strongest 0.7)",
+        help="artistic shadow lift: luminance gamma in (0, 1], 1 = off (suggested 0.85, strongest 0.7); "
+        "the stronger of this and the animal's built-in lift is used",
+    )
+    p.add_argument(
+        "--periphery",
+        type=float,
+        default=None,
+        help="extra blur at the frame corners as a multiple of the centre blur (with --acuity); "
+        "default: the animal's built-in value",
+    )
+    p.add_argument(
+        "--no-traits",
+        action="store_true",
+        help="ignore the animal's built-in artistic traits (shadow lift and peripheral blur)",
     )
     return p
 
@@ -81,14 +99,24 @@ def main(argv: list[str] | None = None) -> int:
     except OSError as exc:  # unreadable file or a format Pillow cannot identify
         parser.error(f"cannot read {args.input} as an image: {exc}")
     try:
+        profile = profile_for(args.variant)
+        if not 0.0 < args.shadow_lift <= 1.0:
+            raise ValueError(f"gamma must be in (0, 1], got {args.shadow_lift}")
+        ratio = args.acuity_ratio if args.acuity_ratio is not None else profile.acuity_ratio
+        periphery = args.periphery if args.periphery is not None else profile.peripheral_blur
+        shadow_gamma = args.shadow_lift
+        if args.no_traits:
+            periphery = args.periphery or 0.0
+        else:
+            shadow_gamma = min(shadow_gamma, profile.shadow_gamma)  # smaller gamma = stronger lift
         acuity = (
-            AcuityParams(args.acuity_ratio, args.hfov, args.exaggeration) if args.acuity else None
+            AcuityParams(ratio, args.hfov, args.exaggeration, periphery=periphery) if args.acuity else None
         )
         result = simulate(
             image,
             matrix,
             acuity=acuity,
-            shadow_gamma=args.shadow_lift,
+            shadow_gamma=shadow_gamma,
             gamut=args.gamut,
         )
     except ValueError as exc:

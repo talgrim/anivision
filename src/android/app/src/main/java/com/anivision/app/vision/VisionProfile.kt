@@ -8,12 +8,28 @@ package com.anivision.app.vision
  * Pure Kotlin (no Android types) so it runs in plain JVM unit tests.
  *
  * @param rowMajor nine values, `matrix[row][col]` flattened row by row.
+ * @param acuityRatio animal/human acuity ratio on a 30 cycles/degree human scale; larger blurs more
+ * (see [Acuity]).
+ * @param shadowGamma artistic shadow lift that is always part of this animal's view: luminance gamma
+ * in (0, 1], 1 meaning none. It never stacks with the night boost; the stronger one wins
+ * (`VisionSettings.shadowGammaFor`).
+ * @param peripheralBlur artistic: the acuity blur grows towards the frame edges,
+ * `sigma(r) = sigma * (1 + peripheralBlur * r^2)`; 0 means the same blur everywhere.
  */
-class VisionProfile(val id: String, rowMajor: FloatArray) {
+class VisionProfile(
+    val id: String,
+    rowMajor: FloatArray,
+    val acuityRatio: Float = Acuity.DEFAULT_ACUITY_RATIO,
+    val shadowGamma: Float = 1f,
+    val peripheralBlur: Float = 0f,
+) {
     private val matrix: FloatArray
 
     init {
         require(rowMajor.size == 9) { "A 3x3 matrix needs 9 values, got ${rowMajor.size}" }
+        require(acuityRatio > 0f) { "acuityRatio must be positive, got $acuityRatio" }
+        require(shadowGamma > 0f && shadowGamma <= 1f) { "shadowGamma must be in (0, 1], got $shadowGamma" }
+        require(peripheralBlur >= 0f) { "peripheralBlur must not be negative, got $peripheralBlur" }
         matrix = rowMajor.copyOf()
     }
 

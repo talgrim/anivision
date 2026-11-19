@@ -77,9 +77,10 @@ uniform sampler2D uTexture;
 #endif
 uniform mat3 uColorMatrix;
 uniform vec2 uStep;
-uniform float uSigma;
-uniform float uSplit; // output-space x of the divider; left of it stays unfiltered
-uniform float uShadowGamma; // night boost: luminance gamma, 1.0 = off
+uniform float uSigma; // blur sigma in pixels at the frame centre
+uniform float uPeriphery; // blur grows to sigma * (1 + uPeriphery) in the corners; 0 = uniform blur
+uniform vec2 uSize; // output size in pixels
+uniform float uShadowGamma; // shadow lift: luminance gamma, 1.0 = off
 
 $COLOUR_FUNCTIONS
 
@@ -100,11 +101,13 @@ vec3 fetchLinear(vec2 uv) {
 
 #ifdef BLUR
 vec3 blurred(vec2 uv) {
-    // Unfiltered side of the split: no blur. In the vertical pass the source texture already holds
-    // the unblurred image here, so the same early-out is right for both passes.
-    if (vUv.x < uSplit) return fetchLinear(uv);
-    float radius = min(ceil(3.0 * uSigma), float(MAX_RADIUS));
-    float k = -0.5 / (uSigma * uSigma);
+    // Peripheral blur: sigma(r) = sigma * (1 + periphery * r^2), r^2 = 0 at the frame centre and
+    // 1 in the corners (matrix.json acuity.peripheral_blur). Each pass uses its own pixel's r^2.
+    vec2 fromCentre = (vUv - 0.5) * uSize;
+    float r2 = dot(fromCentre, fromCentre) / (0.25 * dot(uSize, uSize));
+    float sigma = uSigma * (1.0 + uPeriphery * r2);
+    float radius = min(ceil(3.0 * sigma), float(MAX_RADIUS));
+    float k = -0.5 / (sigma * sigma);
     vec3 sum = fetchLinear(uv);
     float weightSum = 1.0;
     for (int i = 1; i <= MAX_RADIUS; i++) {
@@ -126,7 +129,7 @@ void main() {
     vec3 linear = fetchLinear(vUv);
 #endif
 #ifdef COLOUR_OUT
-    vec3 shown = vUv.x < uSplit ? linear : uColorMatrix * shadowLift(linear, uShadowGamma);
+    vec3 shown = uColorMatrix * shadowLift(linear, uShadowGamma);
     gl_FragColor = vec4(linearToSrgb(clamp(shown, 0.0, 1.0)), 1.0);
 #else
     gl_FragColor = vec4(linear, 1.0);

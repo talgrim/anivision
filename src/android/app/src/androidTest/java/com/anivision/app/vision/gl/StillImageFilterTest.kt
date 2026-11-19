@@ -8,6 +8,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.anivision.app.vision.Acuity
 import com.anivision.app.vision.AnimalVision
 import com.anivision.app.vision.ColorPipeline
+import com.anivision.app.vision.VisionProfile
 import com.anivision.app.vision.VisionSettings
 import kotlin.math.abs
 import kotlinx.coroutines.runBlocking
@@ -23,6 +24,9 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class StillImageFilterTest {
     private val filter = StillImageFilter()
+
+    /** The cat's matrix without its built-in lift, which the CPU reference pipeline does not apply. */
+    private val CAT_WITHOUT_LIFT = AnimalVision.CAT_V2.let { VisionProfile(it.id, it.linearMatrix(), it.acuityRatio) }
 
     @Test
     fun passThroughKeepsPixelsAndOrientation() {
@@ -51,10 +55,32 @@ class StillImageFilterTest {
 
     @Test
     fun dogViewMatchesTheCpuReferencePipeline() {
-        val result = run(card(), rotation = 0, VisionSettings(profile = AnimalVision.DOG))
+        val result = run(card(), rotation = 0, VisionSettings(right = AnimalVision.DOG))
         for (quadrant in Quadrant.entries) {
             val (r, g, b) = quadrant.rgb
             assertNear(quadrant.name, ColorPipeline.projectSrgb8(AnimalVision.DOG, r, g, b).toList(), result.centreOf(quadrant), 2)
+        }
+    }
+
+    @Test
+    fun aSplitFiltersEachSideWithItsOwnProfile() {
+        val settings = VisionSettings(left = AnimalVision.DOG, right = CAT_WITHOUT_LIFT, split = 0.5f)
+        val result = run(card(), rotation = 0, settings)
+        for (quadrant in Quadrant.entries) {
+            val (r, g, b) = quadrant.rgb
+            val profile = if (quadrant.right) CAT_WITHOUT_LIFT else AnimalVision.DOG
+            assertNear(quadrant.name, ColorPipeline.projectSrgb8(profile, r, g, b).toList(), result.centreOf(quadrant), 2)
+        }
+    }
+
+    @Test
+    fun aSplitWithAHumanSideLeavesThatSideUntouched() {
+        val result = run(card(), rotation = 0, VisionSettings(right = AnimalVision.DOG, split = 0.5f))
+        for (quadrant in Quadrant.entries) {
+            val (r, g, b) = quadrant.rgb
+            // Left of the divider is Human (untouched), right of it is the dog.
+            val expected = if (quadrant.right) ColorPipeline.projectSrgb8(AnimalVision.DOG, r, g, b).toList() else quadrant.rgb
+            assertNear(quadrant.name, expected, result.centreOf(quadrant), 2)
         }
     }
 
@@ -73,7 +99,7 @@ class StillImageFilterTest {
             drawColor(Color.BLACK)
             drawRect(size / 2f, 0f, size.toFloat(), size.toFloat(), Paint().apply { color = Color.WHITE })
         }
-        val result = run(source, rotation = 0, VisionSettings(profile = AnimalVision.DOG, blurExaggeration = Acuity.MAX_EXAGGERATION))
+        val result = run(source, rotation = 0, VisionSettings(right = AnimalVision.DOG, blurExaggeration = Acuity.MAX_EXAGGERATION))
         val seam = Color.green(result.getPixel(size / 2 - 1, size / 2))
         assertTrue("seam pixel should be a grey mix, was $seam", seam in 20..235)
         assertEquals(0, Color.green(result.getPixel(20, size / 2)))
